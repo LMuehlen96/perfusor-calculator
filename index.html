@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Perfusor-Rechner</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Perfusor">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
   :root{
     --bg:#0f172a; --card:#1e293b; --card2:#273449; --line:#38507a;
@@ -14,10 +22,14 @@
   html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
   .wrap{max-width:520px; margin:0 auto; padding:16px 16px 60px;}
-  header{display:flex; align-items:center; gap:10px; padding:6px 2px 14px;}
+  header{display:flex; align-items:center; gap:10px; padding:6px 2px 2px;}
   header h1{font-size:20px; margin:0; font-weight:700;}
-  header .pill{font-size:11px; color:var(--muted); border:1px solid var(--line);
-    padding:3px 8px; border-radius:999px; margin-left:auto;}
+  .lang{display:flex; gap:2px; margin-left:auto; background:var(--card);
+    border:1px solid var(--line); border-radius:999px; padding:2px; flex:none;}
+  .lang button{background:transparent; border:none; color:var(--muted); font-size:12px;
+    font-weight:800; padding:5px 11px; border-radius:999px; cursor:pointer; width:auto;}
+  .lang button.active{background:var(--accent2); color:#eafff5;}
+  .tagline{font-size:12px; color:var(--muted); margin:2px 2px 14px;}
   .steps{display:flex; gap:8px; margin-bottom:14px;}
   .steps .s{flex:1; text-align:center; font-size:12px; padding:7px 4px; border-radius:10px;
     background:var(--card); color:var(--muted); border:1px solid transparent;}
@@ -56,55 +68,85 @@
   .out-sel{width:auto; margin:14px auto 0; display:block; background:#0f3327;
     border:1px solid #1d6b4e; color:#bff3dc; font-size:14px; padding:9px 12px;
     border-radius:10px; font-weight:600; text-align:center;}
-  .summary{font-size:13px; color:var(--muted); line-height:1.6;}
-  .summary b{color:var(--txt);}
-  .cross{margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
-    font-size:13px; color:var(--muted); line-height:1.7;}
-  .cross b{color:var(--txt);}
   .err{background:#3a1616; border:1px solid var(--danger); color:#ffb4b4;
     border-radius:12px; padding:12px; font-size:13px; margin-bottom:12px; display:none;}
+  .warn{border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.45;
+    margin:12px 0 0; text-align:left; font-weight:600; display:none;}
+  .warn.show{display:block;}
+  .warn.amber{background:#3a2f12; border:1px solid var(--warn); color:#ffd98a;}
+  .warn.red{background:#3a1616; border:1px solid var(--danger); color:#ffb4b4;}
   .disclaimer{font-size:11px; color:#6b7c96; line-height:1.5; text-align:center;
     margin-top:20px; padding:0 6px;}
-  .swap{font-size:12px; color:var(--blue); background:none; border:none; cursor:pointer;
-    padding:4px 0; font-weight:600;}
+
+  /* Schalter */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0; border-top:1px solid var(--line);}
+  .toggle-row .tlbl{font-size:14px; font-weight:600; color:var(--txt);}
+  .switch{position:relative; display:inline-block; width:48px; height:28px; flex:none;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:var(--card2); border:1px solid var(--line);
+    border-radius:28px; transition:.2s; cursor:pointer;}
+  .slider:before{content:""; position:absolute; height:20px; width:20px; left:3px; top:3px;
+    background:#93a4c0; border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider{background:var(--accent2); border-color:var(--accent);}
+  .switch input:checked + .slider:before{transform:translateX(20px); background:#eafff5;}
+
+  .panel{display:none; padding:2px 0 6px;}
+  .panel.show{display:block;}
+  .rateline{display:flex; justify-content:space-between; align-items:baseline;
+    font-size:13px; padding:7px 2px; border-bottom:1px dashed var(--line); color:var(--muted);}
+  .rateline .rn{font-weight:600;}
+  .rateline .rv{color:var(--txt);}
+  .rateline .rv b{font-size:16px; font-weight:800;}
+  .rateline .na{color:#6b7c96; font-style:italic; font-size:12px;}
+  .placeholder{font-size:13px; color:#6b7c96; padding:8px 2px;}
+  .daily{background:#26201a; border:1px solid #7a5b2e; border-radius:12px; padding:12px 14px;
+    margin:6px 0 2px; font-size:14px; line-height:1.9; color:#f0d9b8;}
+  .daily .t{font-size:11px; letter-spacing:.5px; color:#e0b877; font-weight:800;
+    display:block; margin-bottom:5px;}
+  .daily b{color:#fff7ec; font-weight:800;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>💉 Perfusor-Rechner</h1>
-    <span class="pill">Dosis bleibt gleich</span>
+    <h1 data-i18n="title">💉 Perfusor-Rechner</h1>
+    <div class="lang">
+      <button id="langDe" onclick="setLang('de')">DE</button>
+      <button id="langEn" onclick="setLang('en')">EN</button>
+    </div>
   </header>
+  <div class="tagline" data-i18n="tagline">Dosis bleibt gleich</div>
 
   <div class="steps">
-    <div class="s active" id="stepTab1">1 · Das läuft gerade</div>
-    <div class="s" id="stepTab2">2 · Umrechnen auf</div>
+    <div class="s active" id="stepTab1" data-i18n="step1">1 · Das läuft gerade</div>
+    <div class="s" id="stepTab2" data-i18n="step2">2 · Umrechnen auf</div>
   </div>
 
   <!-- ============ SCHRITT 1 ============ -->
   <section id="view1">
     <div class="card">
-      <h2>Das läuft gerade</h2>
+      <h2 data-i18n="h2_current">Das läuft gerade</h2>
 
       <div class="row">
-        <label>Konzentration (aktuell)</label>
+        <label data-i18n="lbl_conc_cur">Konzentration (aktuell)</label>
         <div class="conc">
-          <input id="cur_mass" type="text" inputmode="decimal" placeholder="z.B. 5">
+          <input id="cur_mass" type="text" inputmode="decimal" data-ph="ph_mass5" placeholder="z.B. 5">
           <select id="cur_massUnit" class="unit-sel">
             <option value="mg">mg</option>
             <option value="ug">µg</option>
           </select>
-          <span class="sep">in</span>
-          <input id="cur_vol" type="text" inputmode="decimal" placeholder="50">
+          <span class="sep" data-i18n="sep_in">in</span>
+          <input id="cur_vol" type="text" inputmode="decimal" data-ph="ph_vol" placeholder="50">
           <select id="cur_volUnit" class="unit-sel"><option value="ml">ml</option></select>
         </div>
-        <div class="hint">Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml".</div>
+        <div class="hint" data-i18n="hint_conc_cur">Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml".</div>
       </div>
 
       <div class="row">
-        <label>Laufrate (aktuell)</label>
+        <label data-i18n="lbl_rate_cur">Laufrate (aktuell)</label>
         <div class="rate-grid">
-          <input id="cur_rate" type="text" inputmode="decimal" placeholder="Wert">
+          <input id="cur_rate" type="text" inputmode="decimal" data-ph="ph_rate" placeholder="Wert">
           <select id="cur_rateUnit">
             <option value="ml/h">ml/h</option>
             <option value="mg/h">mg/h</option>
@@ -119,71 +161,187 @@
       </div>
 
       <div class="row" id="weightRow">
-        <label>Gewicht Patient</label>
+        <label data-i18n="lbl_weight">Gewicht Patient</label>
         <div class="rate-grid">
-          <input id="weight" type="text" inputmode="decimal" placeholder="z.B. 75">
+          <input id="weight" type="text" inputmode="decimal" data-ph="ph_weight" placeholder="z.B. 75">
           <select disabled><option>kg</option></select>
         </div>
-        <div class="hint" id="weightHint">Nur nötig bei gewichtsbezogenen Laufraten (…/kg/…).</div>
+        <div class="hint" id="weightHint"></div>
       </div>
+
+      <!-- Schalter Schritt 1 -->
+      <div class="toggle-row">
+        <span class="tlbl" data-i18n="toggle_other">Andere Laufraten anzeigen</span>
+        <label class="switch"><input type="checkbox" class="sw-other" onchange="setOther(this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="panel" id="other1"></div>
+
+      <div class="toggle-row">
+        <span class="tlbl" data-i18n="toggle_icu">Intensivfunktion (Tagesdosis)</span>
+        <label class="switch"><input type="checkbox" class="sw-icu" onchange="setIcu(this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="panel" id="daily1"></div>
     </div>
 
     <div class="err" id="err1"></div>
-    <button class="btn btn-primary" onclick="goStep2()">Weiter zur Umrechnung →</button>
+    <button class="btn btn-primary" data-i18n="btn_next" onclick="goStep2()">Weiter zur Umrechnung →</button>
   </section>
 
   <!-- ============ SCHRITT 2 ============ -->
   <section id="view2" class="hidden">
     <div class="result" id="resultBox">
-      <div class="lab">NEUE LAUFRATE</div>
+      <div class="lab" data-i18n="lab_newrate">NEUE LAUFRATE</div>
       <div class="big" id="newRate">– <span id="newRateUnit">ml/h</span></div>
       <div class="sub" id="newRateSub"></div>
       <select id="out_unit" class="out-sel">
-        <option value="ml/h" selected>Ausgabe in ml/h</option>
-        <option value="mg/h">Ausgabe in mg/h</option>
-        <option value="ug/h">Ausgabe in µg/h</option>
-        <option value="ug/min">Ausgabe in µg/min</option>
-        <option value="ug/kg/min">Ausgabe in µg/kg/min</option>
-        <option value="ug/kg/h">Ausgabe in µg/kg/h</option>
-        <option value="mg/kg/h">Ausgabe in mg/kg/h</option>
-        <option value="ng/kg/min">Ausgabe in ng/kg/min</option>
+        <option value="ml/h" selected>ml/h</option>
+        <option value="mg/h">mg/h</option>
+        <option value="ug/h">µg/h</option>
+        <option value="ug/min">µg/min</option>
+        <option value="ug/kg/min">µg/kg/min</option>
+        <option value="ug/kg/h">µg/kg/h</option>
+        <option value="mg/kg/h">mg/kg/h</option>
+        <option value="ng/kg/min">ng/kg/min</option>
       </select>
+      <div class="warn" id="warnBox"></div>
     </div>
 
     <div class="card">
-      <h2>Umrechnen auf neue Konzentration</h2>
+      <h2 data-i18n="h2_convert">Umrechnen auf neue Konzentration</h2>
       <div class="row">
-        <label>Konzentration (Transport / neu)</label>
+        <label data-i18n="lbl_conc_new">Konzentration (Transport / neu)</label>
         <div class="conc">
-          <input id="new_mass" type="text" inputmode="decimal" placeholder="z.B. 10">
+          <input id="new_mass" type="text" inputmode="decimal" data-ph="ph_mass10" placeholder="z.B. 10">
           <select id="new_massUnit" class="unit-sel">
             <option value="mg">mg</option>
             <option value="ug">µg</option>
           </select>
-          <span class="sep">in</span>
-          <input id="new_vol" type="text" inputmode="decimal" placeholder="50">
+          <span class="sep" data-i18n="sep_in">in</span>
+          <input id="new_vol" type="text" inputmode="decimal" data-ph="ph_vol" placeholder="50">
           <select id="new_volUnit" class="unit-sel"><option value="ml">ml</option></select>
         </div>
-        <div class="hint">Wirkstoffmenge im neuen Perfusor. Rechnet live.</div>
+        <div class="hint" data-i18n="hint_conc_new">Wirkstoffmenge im neuen Perfusor. Rechnet live.</div>
       </div>
 
-      <div class="cross" id="crossCheck"></div>
+      <!-- Schalter Schritt 2 -->
+      <div class="toggle-row">
+        <span class="tlbl" data-i18n="toggle_other">Andere Laufraten anzeigen</span>
+        <label class="switch"><input type="checkbox" class="sw-other" onchange="setOther(this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="panel" id="other2"></div>
+
+      <div class="toggle-row">
+        <span class="tlbl" data-i18n="toggle_icu">Intensivfunktion (Tagesdosis)</span>
+        <label class="switch"><input type="checkbox" class="sw-icu" onchange="setIcu(this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="panel" id="daily2"></div>
     </div>
 
     <div class="err" id="err2"></div>
     <div class="btn-row">
-      <button class="btn btn-ghost" style="flex:0.8" onclick="goStep1()">← Zurück</button>
-      <button class="btn btn-primary" style="flex:1.4" onclick="resetAll()">Neue Rechnung</button>
+      <button class="btn btn-ghost" style="flex:0.8" data-i18n="btn_back" onclick="goStep1()">← Zurück</button>
+      <button class="btn btn-primary" style="flex:1.4" data-i18n="btn_reset" onclick="resetAll()">Neue Rechnung</button>
     </div>
   </section>
 
-  <div class="disclaimer">
-    ⚠️ Hilfsmittel — keine ärztliche Anordnung. Ergebnis immer plausibilisieren
-    und nach dem Vier-Augen-Prinzip gegenprüfen. Keine Gewähr für Richtigkeit.
-  </div>
+  <div class="disclaimer" data-i18n="disclaimer"></div>
 </div>
 
 <script>
+/* ================= i18n ================= */
+const I18N = {
+  de: {
+    title: "💉 Perfusor-Rechner",
+    tagline: "Dosis bleibt gleich",
+    step1: "1 · Das läuft gerade",
+    step2: "2 · Umrechnen auf",
+    h2_current: "Das läuft gerade",
+    lbl_conc_cur: "Konzentration (aktuell)",
+    sep_in: "in",
+    hint_conc_cur: "Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml“.",
+    lbl_rate_cur: "Laufrate (aktuell)",
+    lbl_weight: "Gewicht Patient",
+    toggle_other: "Andere Laufraten anzeigen",
+    toggle_icu: "Intensivfunktion (Tagesdosis)",
+    btn_next: "Weiter zur Umrechnung →",
+    lab_newrate: "NEUE LAUFRATE",
+    h2_convert: "Umrechnen auf neue Konzentration",
+    lbl_conc_new: "Konzentration (Transport / neu)",
+    hint_conc_new: "Wirkstoffmenge im neuen Perfusor. Rechnet live.",
+    btn_back: "← Zurück",
+    btn_reset: "Neue Rechnung",
+    disclaimer: "⚠️ Hilfsmittel — keine ärztliche Anordnung. Ergebnis immer plausibilisieren und nach dem Vier-Augen-Prinzip gegenprüfen. Keine Gewähr für Richtigkeit.",
+    out_prefix: "Ausgabe in ",
+    ph_mass5: "z.B. 5", ph_mass10: "z.B. 10", ph_vol: "50", ph_rate: "Wert", ph_weight: "z.B. 75",
+    weight_req: "<span style='color:#f59e0b'>Erforderlich</span> für diese Laufrate (…/kg/…).",
+    weight_not_needed: "Bei dieser Laufrate nicht nötig.",
+    enter_new_conc: "Neue Konzentration eingeben…",
+    enter_all_above: "Werte oben vollständig eingeben…",
+    kg_need_weight_out: "Für diese Ausgabe-Einheit Gewicht in Schritt 1 eingeben.",
+    sub_at: (mMg,vol,cMgMl)=> "bei "+fmt(mMg)+" mg / "+fmt(vol)+" ml  (= "+fmt(cMgMl)+" mg/ml)",
+    sub_equals: (mlh)=> "  ·  entspricht "+fmt(mlh)+" ml/h",
+    err_fill: (list)=> "Bitte ausfüllen: "+list.join(", ")+".",
+    field_mass_cur: "Wirkstoffmenge (aktuell)", field_vol_cur: "Volumen (aktuell)",
+    field_rate: "Laufrate", field_weight: "Gewicht",
+    warn_implausible: (mlh)=> "⛔ Unplausibel hohe Laufrate ("+fmt(mlh)+" ml/h). Sehr wahrscheinlich ein Eingabefehler bei Einheit oder Konzentration — bitte prüfen.",
+    warn_pumpmax: (max)=> "⚠️ Laufrate über typischem Spritzenpumpen-Maximum (~"+max+" ml/h). Bitte Eingaben und Pumpengrenze prüfen.",
+    warn_low: (mlh)=> "ℹ️ Sehr niedrige Laufrate ("+fmt(mlh)+" ml/h). Je nach Pumpe evtl. unterhalb der minimalen Förderrate — bitte prüfen.",
+    daily_title: "TAGESGESAMTDOSIS · 24 h",
+    daily_drug: "Wirkstoff", daily_volume: "Volumen", daily_perkg: "pro kg",
+    rate_need_weight: "Gewicht nötig"
+  },
+  en: {
+    title: "💉 Infusion Rate Calculator",
+    tagline: "Dose stays the same",
+    step1: "1 · Currently running",
+    step2: "2 · Convert to",
+    h2_current: "Currently running",
+    lbl_conc_cur: "Concentration (current)",
+    sep_in: "in",
+    hint_conc_cur: "Drug amount in the syringe, e.g. “5 mg in 50 ml”.",
+    lbl_rate_cur: "Rate (current)",
+    lbl_weight: "Patient weight",
+    toggle_other: "Show other rates",
+    toggle_icu: "ICU mode (daily dose)",
+    btn_next: "Continue to conversion →",
+    lab_newrate: "NEW RATE",
+    h2_convert: "Convert to new concentration",
+    lbl_conc_new: "Concentration (transport / new)",
+    hint_conc_new: "Drug amount in the new syringe. Updates live.",
+    btn_back: "← Back",
+    btn_reset: "New calculation",
+    disclaimer: "⚠️ Aid only — not a medical order. Always sanity-check the result and verify using the four-eyes principle. No guarantee of accuracy.",
+    out_prefix: "Output in ",
+    ph_mass5: "e.g. 5", ph_mass10: "e.g. 10", ph_vol: "50", ph_rate: "Value", ph_weight: "e.g. 75",
+    weight_req: "<span style='color:#f59e0b'>Required</span> for this rate (…/kg/…).",
+    weight_not_needed: "Not needed for this rate.",
+    enter_new_conc: "Enter new concentration…",
+    enter_all_above: "Enter all values above…",
+    kg_need_weight_out: "Enter weight in step 1 for this output unit.",
+    sub_at: (mMg,vol,cMgMl)=> "at "+fmt(mMg)+" mg / "+fmt(vol)+" ml  (= "+fmt(cMgMl)+" mg/ml)",
+    sub_equals: (mlh)=> "  ·  equals "+fmt(mlh)+" ml/h",
+    err_fill: (list)=> "Please fill in: "+list.join(", ")+".",
+    field_mass_cur: "Drug amount (current)", field_vol_cur: "Volume (current)",
+    field_rate: "Rate", field_weight: "Weight",
+    warn_implausible: (mlh)=> "⛔ Implausibly high rate ("+fmt(mlh)+" ml/h). Most likely an input error in unit or concentration — please check.",
+    warn_pumpmax: (max)=> "⚠️ Rate above typical syringe-pump maximum (~"+max+" ml/h). Please check inputs and pump limit.",
+    warn_low: (mlh)=> "ℹ️ Very low rate ("+fmt(mlh)+" ml/h). May be below the minimum delivery rate of some pumps — please check.",
+    daily_title: "TOTAL DAILY DOSE · 24 h",
+    daily_drug: "Drug", daily_volume: "Volume", daily_perkg: "per kg",
+    rate_need_weight: "Weight needed"
+  }
+};
+let LANG = "de";
+function t(key, ...args){
+  const v = I18N[LANG][key];
+  return (typeof v === "function") ? v(...args) : v;
+}
+function locale(){ return LANG === "de" ? "de-DE" : "en-US"; }
+
+/* ---------- Anzeige-Symbole je Einheit (sprachunabhängig) ---------- */
+const UNIT_LABEL = {"ml/h":"ml/h","mg/h":"mg/h","ug/h":"µg/h","ug/min":"µg/min",
+  "ug/kg/min":"µg/kg/min","ug/kg/h":"µg/kg/h","mg/kg/h":"mg/kg/h","ng/kg/min":"ng/kg/min"};
+
 /* ---------- Helfer ---------- */
 function num(id){
   const el = document.getElementById(id);
@@ -197,8 +355,13 @@ function fmt(x){
   if(!isFinite(x)) return "–";
   if(x===0) return "0";
   const a=Math.abs(x);
-  let d = a>=100?1 : a>=10?1 : a>=1?2 : 3;
-  return x.toLocaleString("de-DE",{minimumFractionDigits:0, maximumFractionDigits:d});
+  let d = a>=10?1 : a>=1?2 : a>=0.1?3 : 4; // kleine Werte feiner auflösen
+  return x.toLocaleString(locale(),{minimumFractionDigits:0, maximumFractionDigits:d});
+}
+function fmtMass(mg){ // Wirkstoffmenge: mg, ab 1000 mg -> g
+  if(!isFinite(mg)) return "–";
+  if(Math.abs(mg) >= 1000) return fmt(mg/1000) + " g";
+  return fmt(mg) + " mg";
 }
 
 /* ---------- Kernrechnung: liefert Dosis in µg/h ---------- */
@@ -224,18 +387,134 @@ function deliveredUgPerH(){
 function needsWeight(){
   return document.getElementById("cur_rateUnit").value.includes("/kg/");
 }
-
-/* ---------- Gewichtsfeld nur bei Bedarf hervorheben ---------- */
-function updateWeightVisibility(){
-  const hint = document.getElementById("weightHint");
-  if(needsWeight()){
-    hint.innerHTML = "<span style='color:#f59e0b'>Erforderlich</span> für diese Laufrate (…/kg/…).";
-  } else {
-    hint.innerHTML = "Bei dieser Laufrate nicht nötig.";
+// Ausgabewert aus konstanter Dosis (µg/h) in gewünschter Einheit
+function rateFromDose(doseUgH, unit, concUgPerMl, w){
+  switch(unit){
+    case "ml/h":      return doseUgH / concUgPerMl;
+    case "mg/h":      return doseUgH / 1000;
+    case "ug/h":      return doseUgH;
+    case "ug/min":    return doseUgH / 60;
+    case "ug/kg/min": return doseUgH / w / 60;
+    case "ug/kg/h":   return doseUgH / w;
+    case "mg/kg/h":   return doseUgH / 1000 / w;
+    case "ng/kg/min": return doseUgH / w / 60 * 1000;
   }
 }
-document.getElementById("cur_rateUnit").addEventListener("change", updateWeightVisibility);
-updateWeightVisibility();
+
+/* ---------- Plausibilitäts-Schwellen (anpassbar) ---------- */
+const WARN = {
+  pumpMax:   99,    // ml/h: typisches Maximum vieler Spritzenpumpen
+  implausible: 1000,// ml/h: praktisch immer Eingabefehler (Einheit/Konzentration)
+  lowRate:   0.5    // ml/h: je nach Pumpe evtl. unter minimaler Förderrate
+};
+function checkWarnings(mlh){
+  const box = document.getElementById("warnBox");
+  box.className = "warn"; box.innerHTML = "";
+  if(!isFinite(mlh) || mlh<=0) return;
+  if(mlh > WARN.implausible){
+    box.className = "warn red show";   box.innerHTML = t("warn_implausible", mlh);
+  } else if(mlh > WARN.pumpMax){
+    box.className = "warn amber show";  box.innerHTML = t("warn_pumpmax", WARN.pumpMax);
+  } else if(mlh < WARN.lowRate){
+    box.className = "warn amber show";  box.innerHTML = t("warn_low", mlh);
+  }
+}
+
+/* ---------- Gewichtsfeld-Hinweis ---------- */
+function updateWeightVisibility(){
+  const hint = document.getElementById("weightHint");
+  hint.innerHTML = needsWeight() ? t("weight_req") : t("weight_not_needed");
+}
+
+/* ---------- Schalter-Status (auf beiden Seiten synchron) ---------- */
+const state = { other:false, icu:false };
+function setOther(v){
+  state.other = v;
+  document.querySelectorAll(".sw-other").forEach(c=>c.checked=v);
+  document.getElementById("other1").classList.toggle("show", v);
+  document.getElementById("other2").classList.toggle("show", v);
+  renderExtras();
+}
+function setIcu(v){
+  state.icu = v;
+  document.querySelectorAll(".sw-icu").forEach(c=>c.checked=v);
+  document.getElementById("daily1").classList.toggle("show", v);
+  document.getElementById("daily2").classList.toggle("show", v);
+  renderExtras();
+}
+
+/* ---------- Kontexte für beide Seiten ---------- */
+function curContext(){
+  const dose = deliveredUgPerH();
+  const conc = massToUg(num("cur_mass"), document.getElementById("cur_massUnit").value) / num("cur_vol");
+  const w = num("weight");
+  const ok = isFinite(dose) &&
+             num("cur_mass")>0 && num("cur_vol")>0 && isFinite(num("cur_rate")) && num("cur_rate")>=0 &&
+             (!needsWeight() || (isFinite(w)&&w>0));
+  return {dose, conc, w, ok};
+}
+function newContext(){
+  const dose = deliveredUgPerH(); // identische Dosis
+  const conc = massToUg(num("new_mass"), document.getElementById("new_massUnit").value) / num("new_vol");
+  const w = num("weight");
+  const c1 = curContext();
+  const ok = c1.ok && num("new_mass")>0 && num("new_vol")>0 && isFinite(conc);
+  return {dose, conc, w, ok};
+}
+
+/* ---------- Panels rendern ---------- */
+const UNITS = [
+  ["ml/h","ml/h",false],["mg/h","mg/h",false],["µg/h","ug/h",false],["µg/min","ug/min",false],
+  ["µg/kg/min","ug/kg/min",true],["µg/kg/h","ug/kg/h",true],["mg/kg/h","mg/kg/h",true],["ng/kg/min","ng/kg/min",true]
+];
+function ratesHTML(dose, conc, w){
+  let h="";
+  for(const [name,key,needW] of UNITS){
+    let right;
+    if(needW && !(isFinite(w)&&w>0)){
+      right = "<span class='na'>"+t("rate_need_weight")+"</span>";
+    } else {
+      right = "<span class='rv'><b>"+fmt(rateFromDose(dose,key,conc,w))+"</b></span>";
+    }
+    h += "<div class='rateline'><span class='rn'>"+name+"</span>"+right+"</div>";
+  }
+  return h;
+}
+function dailyHTML(dose, conc, w){
+  const mgDay = dose*24/1000;    // Wirkstoff mg / 24 h
+  const mlDay = (dose/conc)*24;  // Volumen ml / 24 h (konzentrationsabhängig)
+  let s = "<span class='t'>"+t("daily_title")+"</span>";
+  s += t("daily_drug")+": <b>"+fmtMass(mgDay)+"</b> / 24 h<br>";
+  s += t("daily_volume")+": <b>"+fmt(mlDay)+" ml</b> / 24 h";
+  if(isFinite(w)&&w>0){
+    s += "<br>"+t("daily_perkg")+": <b>"+fmt(mgDay/w)+" mg/kg</b> / 24 h";
+  }
+  return s;
+}
+function renderExtras(){
+  const c1 = curContext();
+  if(state.other){
+    document.getElementById("other1").innerHTML = c1.ok
+      ? ratesHTML(c1.dose,c1.conc,c1.w)
+      : "<div class='placeholder'>"+t("enter_all_above")+"</div>";
+  }
+  if(state.icu){
+    document.getElementById("daily1").innerHTML = c1.ok
+      ? "<div class='daily'>"+dailyHTML(c1.dose,c1.conc,c1.w)+"</div>"
+      : "<div class='placeholder'>"+t("enter_all_above")+"</div>";
+  }
+  const c2 = newContext();
+  if(state.other){
+    document.getElementById("other2").innerHTML = c2.ok
+      ? ratesHTML(c2.dose,c2.conc,c2.w)
+      : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
+  }
+  if(state.icu){
+    document.getElementById("daily2").innerHTML = c2.ok
+      ? "<div class='daily'>"+dailyHTML(c2.dose,c2.conc,c2.w)+"</div>"
+      : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
+  }
+}
 
 /* ---------- Navigation ---------- */
 function showErr(id, msg){ const e=document.getElementById(id); e.textContent=msg; e.style.display="block"; }
@@ -244,17 +523,16 @@ function hideErr(id){ document.getElementById(id).style.display="none"; }
 function goStep2(){
   hideErr("err1");
   const errs=[];
-  if(!isFinite(num("cur_mass"))||num("cur_mass")<=0) errs.push("Wirkstoffmenge (aktuell)");
-  if(!isFinite(num("cur_vol"))||num("cur_vol")<=0)  errs.push("Volumen (aktuell)");
-  if(!isFinite(num("cur_rate"))||num("cur_rate")<0) errs.push("Laufrate");
-  if(needsWeight() && (!isFinite(num("weight"))||num("weight")<=0)) errs.push("Gewicht");
-  if(errs.length){ showErr("err1","Bitte ausfüllen: "+errs.join(", ")+"."); return; }
+  if(!isFinite(num("cur_mass"))||num("cur_mass")<=0) errs.push(t("field_mass_cur"));
+  if(!isFinite(num("cur_vol"))||num("cur_vol")<=0)  errs.push(t("field_vol_cur"));
+  if(!isFinite(num("cur_rate"))||num("cur_rate")<0) errs.push(t("field_rate"));
+  if(needsWeight() && (!isFinite(num("weight"))||num("weight")<=0)) errs.push(t("field_weight"));
+  if(errs.length){ showErr("err1", t("err_fill", errs)); return; }
 
   document.getElementById("view1").classList.add("hidden");
   document.getElementById("view2").classList.remove("hidden");
   document.getElementById("stepTab1").classList.remove("active");
   document.getElementById("stepTab2").classList.add("active");
-  // Standardvorschlag: gleiche Konzentration vorbefüllen falls leer
   if(document.getElementById("new_mass").value===""){
     document.getElementById("new_mass").value = document.getElementById("cur_mass").value;
     document.getElementById("new_massUnit").value = document.getElementById("cur_massUnit").value;
@@ -268,11 +546,14 @@ function goStep1(){
   document.getElementById("view1").classList.remove("hidden");
   document.getElementById("stepTab2").classList.remove("active");
   document.getElementById("stepTab1").classList.add("active");
+  renderExtras();
 }
 function resetAll(){
   ["cur_mass","cur_vol","cur_rate","weight","new_mass","new_vol"].forEach(id=>document.getElementById(id).value="");
   goStep1();
+  renderExtras();
 }
+function step2Visible(){ return !document.getElementById("view2").classList.contains("hidden"); }
 
 /* ---------- Ergebnis (live in Schritt 2) ---------- */
 function calcResult(){
@@ -282,61 +563,78 @@ function calcResult(){
   const newVol = num("new_vol");
   const box=document.getElementById("newRate");
   const sub=document.getElementById("newRateSub");
-  const cross=document.getElementById("crossCheck");
 
   if(!isFinite(newMassUg)||newMassUg<=0||!isFinite(newVol)||newVol<=0){
-    box.innerHTML = "– <span>ml/h</span>";
-    sub.textContent = "Neue Konzentration eingeben…";
-    cross.innerHTML="";
+    box.innerHTML = "– <span id='newRateUnit'>ml/h</span>";
+    sub.textContent = t("enter_new_conc");
+    checkWarnings(NaN);
+    renderExtras();
     return;
   }
   const newConcUgPerMl = newMassUg / newVol;
   const w = num("weight");
   const outUnit = document.getElementById("out_unit").value;
+  const outLabel = UNIT_LABEL[outUnit];
+  const mlh = doseUgH / newConcUgPerMl; // äquivalente ml/h für Plausibilitätsprüfung
 
-  // Ausgabewert je nach gewählter Einheit aus der (konstanten) Dosis berechnen
-  let outVal, outLabel = {"ml/h":"ml/h","mg/h":"mg/h","ug/h":"µg/h","ug/min":"µg/min",
-    "ug/kg/min":"µg/kg/min","ug/kg/h":"µg/kg/h","mg/kg/h":"mg/kg/h","ng/kg/min":"ng/kg/min"}[outUnit];
-  switch(outUnit){
-    case "ml/h":      outVal = doseUgH / newConcUgPerMl; break;
-    case "mg/h":      outVal = doseUgH / 1000; break;
-    case "ug/h":      outVal = doseUgH; break;
-    case "ug/min":    outVal = doseUgH / 60; break;
-    case "ug/kg/min": outVal = doseUgH / w / 60; break;
-    case "ug/kg/h":   outVal = doseUgH / w; break;
-    case "mg/kg/h":   outVal = doseUgH / 1000 / w; break;
-    case "ng/kg/min": outVal = doseUgH / w / 60 * 1000; break;
-  }
-
-  // µg/kg-Ausgaben brauchen ein Gewicht
   if(outUnit.includes("/kg/") && (!isFinite(w) || w<=0)){
-    box.innerHTML = "– <span>"+outLabel+"</span>";
-    sub.textContent = "Für diese Ausgabe-Einheit Gewicht in Schritt 1 eingeben.";
-    document.getElementById("newRateUnit").textContent = outLabel;
+    box.innerHTML = "– <span id='newRateUnit'>"+outLabel+"</span>";
+    sub.textContent = t("kg_need_weight_out");
   } else {
-    box.innerHTML = fmt(outVal) + " <span>"+outLabel+"</span>";
-    document.getElementById("newRateUnit").textContent = outLabel;
+    const outVal = rateFromDose(doseUgH, outUnit, newConcUgPerMl, w);
+    box.innerHTML = fmt(outVal) + " <span id='newRateUnit'>"+outLabel+"</span>";
     const newConcMgMl = newConcUgPerMl/1000;
-    const mlh = doseUgH / newConcUgPerMl;
-    let subTxt = "bei " + fmt(newMassUg/1000) + " mg / " + fmt(newVol) + " ml  (= " + fmt(newConcMgMl) + " mg/ml)";
-    if(outUnit!=="ml/h") subTxt += "  ·  entspricht " + fmt(mlh) + " ml/h";
+    let subTxt = t("sub_at", newMassUg/1000, newVol, newConcMgMl);
+    if(outUnit!=="ml/h") subTxt += t("sub_equals", mlh);
     sub.textContent = subTxt;
   }
-
-  // Cross-Check: verabreichte Dosis in mehreren Einheiten
-  let lines = "<b>Kontrolle – verabreichte Dosis (unverändert):</b><br>";
-  lines += "• " + fmt(doseUgH/1000) + " mg/h &nbsp;|&nbsp; " + fmt(doseUgH) + " µg/h<br>";
-  if(isFinite(w)&&w>0){
-    lines += "• " + fmt(doseUgH/w/60) + " µg/kg/min &nbsp;|&nbsp; " + fmt(doseUgH/w) + " µg/kg/h";
-  } else {
-    lines += "<span style='color:#6b7c96'>• µg/kg-Angaben: Gewicht eingeben</span>";
-  }
-  cross.innerHTML = lines;
+  checkWarnings(mlh);
+  renderExtras();
 }
+
+/* ---------- Sprache anwenden ---------- */
+function setLang(lang){
+  LANG = (lang==="en") ? "en" : "de";
+  try{ localStorage.setItem("perfusor_lang", LANG); }catch(e){}
+  document.documentElement.lang = LANG;
+  document.title = t("title").replace(/^\S+\s/, ""); // Titel ohne Emoji
+  document.getElementById("langDe").classList.toggle("active", LANG==="de");
+  document.getElementById("langEn").classList.toggle("active", LANG==="en");
+  // Statische Texte
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i18n")); });
+  document.querySelectorAll("[data-ph]").forEach(el=>{ el.setAttribute("placeholder", t(el.getAttribute("data-ph"))); });
+  // Ausgabe-Dropdown (Präfix + Einheiten-Symbol)
+  Array.from(document.getElementById("out_unit").options).forEach(o=>{ o.textContent = t("out_prefix") + UNIT_LABEL[o.value]; });
+  // Dynamische Bereiche neu aufbauen
+  updateWeightVisibility();
+  if(step2Visible()) calcResult(); else renderExtras();
+}
+
+/* ---------- Event-Listener ---------- */
+document.getElementById("cur_rateUnit").addEventListener("change", ()=>{ updateWeightVisibility(); renderExtras(); });
+["cur_mass","cur_massUnit","cur_vol","cur_rate","weight"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", renderExtras);
+  document.getElementById(id).addEventListener("change", renderExtras);
+});
 ["new_mass","new_vol","new_massUnit","new_volUnit","out_unit"].forEach(id=>{
   document.getElementById(id).addEventListener("input", calcResult);
   document.getElementById(id).addEventListener("change", calcResult);
 });
+
+/* ---------- Start: gespeicherte oder Browser-Sprache ---------- */
+(function initLang(){
+  let saved = null;
+  try{ saved = localStorage.getItem("perfusor_lang"); }catch(e){}
+  const guess = (navigator.language||"de").toLowerCase().startsWith("de") ? "de" : "en";
+  setLang(saved || guess);
+})();
+
+/* ---------- PWA: Service Worker registrieren (nur über http/https) ---------- */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {/* offline-Modus optional */});
+  });
+}
 </script>
 </body>
 </html>
