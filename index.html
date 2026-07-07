@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Perfusor-Rechner</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#1e293b; --card2:#273449; --line:#38507a;
+    --txt:#e6edf7; --muted:#93a4c0; --accent:#22c55e; --accent2:#16a34a;
+    --blue:#3b82f6; --warn:#f59e0b; --danger:#ef4444; --result:#0b3d2e;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:520px; margin:0 auto; padding:16px 16px 60px;}
+  header{display:flex; align-items:center; gap:10px; padding:6px 2px 14px;}
+  header h1{font-size:20px; margin:0; font-weight:700;}
+  header .pill{font-size:11px; color:var(--muted); border:1px solid var(--line);
+    padding:3px 8px; border-radius:999px; margin-left:auto;}
+  .steps{display:flex; gap:8px; margin-bottom:14px;}
+  .steps .s{flex:1; text-align:center; font-size:12px; padding:7px 4px; border-radius:10px;
+    background:var(--card); color:var(--muted); border:1px solid transparent;}
+  .steps .s.active{background:var(--card2); color:var(--txt); border-color:var(--line); font-weight:600;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:16px; margin-bottom:14px;}
+  .card h2{font-size:15px; margin:0 0 12px; font-weight:700; color:var(--txt);}
+  label{display:block; font-size:13px; color:var(--muted); margin:0 0 6px; font-weight:600;}
+  .row{margin-bottom:14px;}
+  .conc{display:flex; align-items:center; gap:8px;}
+  .conc .sep{color:var(--muted); font-size:14px; font-weight:600;}
+  input,select{width:100%; background:var(--card2); color:var(--txt);
+    border:1px solid var(--line); border-radius:12px; padding:14px 12px;
+    font-size:17px; font-weight:600; outline:none;}
+  input:focus,select:focus{border-color:var(--blue);}
+  input::placeholder{color:#5b6b86; font-weight:500;}
+  .unit-sel{max-width:92px; font-size:15px; padding:14px 6px;}
+  .rate-grid{display:flex; gap:8px;}
+  .rate-grid input{flex:1.1;}
+  .rate-grid select{flex:1.4;}
+  .hint{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4;}
+  .btn{width:100%; border:none; border-radius:14px; padding:16px; font-size:17px;
+    font-weight:700; cursor:pointer; margin-top:4px;}
+  .btn-primary{background:var(--accent); color:#04120a;}
+  .btn-primary:active{background:var(--accent2);}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--line);}
+  .btn-row{display:flex; gap:10px;}
+  .btn-row .btn{margin-top:0;}
+  .hidden{display:none;}
+  .result{background:var(--result); border:1px solid #1d6b4e; border-radius:16px;
+    padding:20px 16px; text-align:center; margin-bottom:14px;}
+  .result .lab{font-size:13px; color:#8fe7c0; font-weight:600; letter-spacing:.3px;}
+  .result .big{font-size:48px; font-weight:800; line-height:1.1; margin:6px 0 2px; color:#eafff5;}
+  .result .big span{font-size:22px; font-weight:700; color:#8fe7c0;}
+  .result .sub{font-size:13px; color:#7fdcb4;}
+  .out-sel{width:auto; margin:14px auto 0; display:block; background:#0f3327;
+    border:1px solid #1d6b4e; color:#bff3dc; font-size:14px; padding:9px 12px;
+    border-radius:10px; font-weight:600; text-align:center;}
+  .summary{font-size:13px; color:var(--muted); line-height:1.6;}
+  .summary b{color:var(--txt);}
+  .cross{margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); line-height:1.7;}
+  .cross b{color:var(--txt);}
+  .err{background:#3a1616; border:1px solid var(--danger); color:#ffb4b4;
+    border-radius:12px; padding:12px; font-size:13px; margin-bottom:12px; display:none;}
+  .disclaimer{font-size:11px; color:#6b7c96; line-height:1.5; text-align:center;
+    margin-top:20px; padding:0 6px;}
+  .swap{font-size:12px; color:var(--blue); background:none; border:none; cursor:pointer;
+    padding:4px 0; font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>💉 Perfusor-Rechner</h1>
+    <span class="pill">Dosis bleibt gleich</span>
+  </header>
+
+  <div class="steps">
+    <div class="s active" id="stepTab1">1 · Das läuft gerade</div>
+    <div class="s" id="stepTab2">2 · Umrechnen auf</div>
+  </div>
+
+  <!-- ============ SCHRITT 1 ============ -->
+  <section id="view1">
+    <div class="card">
+      <h2>Das läuft gerade</h2>
+
+      <div class="row">
+        <label>Konzentration (aktuell)</label>
+        <div class="conc">
+          <input id="cur_mass" type="text" inputmode="decimal" placeholder="z.B. 5">
+          <select id="cur_massUnit" class="unit-sel">
+            <option value="mg">mg</option>
+            <option value="ug">µg</option>
+          </select>
+          <span class="sep">in</span>
+          <input id="cur_vol" type="text" inputmode="decimal" placeholder="50">
+          <select id="cur_volUnit" class="unit-sel"><option value="ml">ml</option></select>
+        </div>
+        <div class="hint">Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml".</div>
+      </div>
+
+      <div class="row">
+        <label>Laufrate (aktuell)</label>
+        <div class="rate-grid">
+          <input id="cur_rate" type="text" inputmode="decimal" placeholder="Wert">
+          <select id="cur_rateUnit">
+            <option value="ml/h">ml/h</option>
+            <option value="mg/h">mg/h</option>
+            <option value="ug/h">µg/h</option>
+            <option value="ug/min">µg/min</option>
+            <option value="ug/kg/min" selected>µg/kg/min</option>
+            <option value="ug/kg/h">µg/kg/h</option>
+            <option value="mg/kg/h">mg/kg/h</option>
+            <option value="ng/kg/min">ng/kg/min</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" id="weightRow">
+        <label>Gewicht Patient</label>
+        <div class="rate-grid">
+          <input id="weight" type="text" inputmode="decimal" placeholder="z.B. 75">
+          <select disabled><option>kg</option></select>
+        </div>
+        <div class="hint" id="weightHint">Nur nötig bei gewichtsbezogenen Laufraten (…/kg/…).</div>
+      </div>
+    </div>
+
+    <div class="err" id="err1"></div>
+    <button class="btn btn-primary" onclick="goStep2()">Weiter zur Umrechnung →</button>
+  </section>
+
+  <!-- ============ SCHRITT 2 ============ -->
+  <section id="view2" class="hidden">
+    <div class="result" id="resultBox">
+      <div class="lab">NEUE LAUFRATE</div>
+      <div class="big" id="newRate">– <span id="newRateUnit">ml/h</span></div>
+      <div class="sub" id="newRateSub"></div>
+      <select id="out_unit" class="out-sel">
+        <option value="ml/h" selected>Ausgabe in ml/h</option>
+        <option value="mg/h">Ausgabe in mg/h</option>
+        <option value="ug/h">Ausgabe in µg/h</option>
+        <option value="ug/min">Ausgabe in µg/min</option>
+        <option value="ug/kg/min">Ausgabe in µg/kg/min</option>
+        <option value="ug/kg/h">Ausgabe in µg/kg/h</option>
+        <option value="mg/kg/h">Ausgabe in mg/kg/h</option>
+        <option value="ng/kg/min">Ausgabe in ng/kg/min</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>Umrechnen auf neue Konzentration</h2>
+      <div class="row">
+        <label>Konzentration (Transport / neu)</label>
+        <div class="conc">
+          <input id="new_mass" type="text" inputmode="decimal" placeholder="z.B. 10">
+          <select id="new_massUnit" class="unit-sel">
+            <option value="mg">mg</option>
+            <option value="ug">µg</option>
+          </select>
+          <span class="sep">in</span>
+          <input id="new_vol" type="text" inputmode="decimal" placeholder="50">
+          <select id="new_volUnit" class="unit-sel"><option value="ml">ml</option></select>
+        </div>
+        <div class="hint">Wirkstoffmenge im neuen Perfusor. Rechnet live.</div>
+      </div>
+
+      <div class="cross" id="crossCheck"></div>
+    </div>
+
+    <div class="err" id="err2"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" style="flex:0.8" onclick="goStep1()">← Zurück</button>
+      <button class="btn btn-primary" style="flex:1.4" onclick="resetAll()">Neue Rechnung</button>
+    </div>
+  </section>
+
+  <div class="disclaimer">
+    ⚠️ Hilfsmittel — keine ärztliche Anordnung. Ergebnis immer plausibilisieren
+    und nach dem Vier-Augen-Prinzip gegenprüfen. Keine Gewähr für Richtigkeit.
+  </div>
+</div>
+
+<script>
+/* ---------- Helfer ---------- */
+function num(id){
+  const el = document.getElementById(id);
+  if(!el) return NaN;
+  const v = (el.value||"").trim().replace(",", ".");
+  if(v==="") return NaN;
+  return parseFloat(v);
+}
+function massToUg(val, unit){ return unit==="mg" ? val*1000 : val; } // mg->µg, µg->µg
+function fmt(x){
+  if(!isFinite(x)) return "–";
+  if(x===0) return "0";
+  const a=Math.abs(x);
+  let d = a>=100?1 : a>=10?1 : a>=1?2 : 3;
+  return x.toLocaleString("de-DE",{minimumFractionDigits:0, maximumFractionDigits:d});
+}
+
+/* ---------- Kernrechnung: liefert Dosis in µg/h ---------- */
+function deliveredUgPerH(){
+  const rate = num("cur_rate");
+  const unit = document.getElementById("cur_rateUnit").value;
+  const w = num("weight");
+  const massUg = massToUg(num("cur_mass"), document.getElementById("cur_massUnit").value);
+  const vol = num("cur_vol");
+  const concUgPerMl = massUg / vol; // µg pro ml
+  switch(unit){
+    case "ml/h":     return rate * concUgPerMl;
+    case "mg/h":     return rate * 1000;
+    case "ug/h":     return rate;
+    case "ug/min":   return rate * 60;
+    case "ug/kg/min":return rate * w * 60;
+    case "ug/kg/h":  return rate * w;
+    case "mg/kg/h":  return rate * 1000 * w;
+    case "ng/kg/min":return rate * w * 60 / 1000;
+    default: return NaN;
+  }
+}
+function needsWeight(){
+  return document.getElementById("cur_rateUnit").value.includes("/kg/");
+}
+
+/* ---------- Gewichtsfeld nur bei Bedarf hervorheben ---------- */
+function updateWeightVisibility(){
+  const hint = document.getElementById("weightHint");
+  if(needsWeight()){
+    hint.innerHTML = "<span style='color:#f59e0b'>Erforderlich</span> für diese Laufrate (…/kg/…).";
+  } else {
+    hint.innerHTML = "Bei dieser Laufrate nicht nötig.";
+  }
+}
+document.getElementById("cur_rateUnit").addEventListener("change", updateWeightVisibility);
+updateWeightVisibility();
+
+/* ---------- Navigation ---------- */
+function showErr(id, msg){ const e=document.getElementById(id); e.textContent=msg; e.style.display="block"; }
+function hideErr(id){ document.getElementById(id).style.display="none"; }
+
+function goStep2(){
+  hideErr("err1");
+  const errs=[];
+  if(!isFinite(num("cur_mass"))||num("cur_mass")<=0) errs.push("Wirkstoffmenge (aktuell)");
+  if(!isFinite(num("cur_vol"))||num("cur_vol")<=0)  errs.push("Volumen (aktuell)");
+  if(!isFinite(num("cur_rate"))||num("cur_rate")<0) errs.push("Laufrate");
+  if(needsWeight() && (!isFinite(num("weight"))||num("weight")<=0)) errs.push("Gewicht");
+  if(errs.length){ showErr("err1","Bitte ausfüllen: "+errs.join(", ")+"."); return; }
+
+  document.getElementById("view1").classList.add("hidden");
+  document.getElementById("view2").classList.remove("hidden");
+  document.getElementById("stepTab1").classList.remove("active");
+  document.getElementById("stepTab2").classList.add("active");
+  // Standardvorschlag: gleiche Konzentration vorbefüllen falls leer
+  if(document.getElementById("new_mass").value===""){
+    document.getElementById("new_mass").value = document.getElementById("cur_mass").value;
+    document.getElementById("new_massUnit").value = document.getElementById("cur_massUnit").value;
+    document.getElementById("new_vol").value = document.getElementById("cur_vol").value;
+  }
+  calcResult();
+  document.getElementById("new_mass").focus();
+}
+function goStep1(){
+  document.getElementById("view2").classList.add("hidden");
+  document.getElementById("view1").classList.remove("hidden");
+  document.getElementById("stepTab2").classList.remove("active");
+  document.getElementById("stepTab1").classList.add("active");
+}
+function resetAll(){
+  ["cur_mass","cur_vol","cur_rate","weight","new_mass","new_vol"].forEach(id=>document.getElementById(id).value="");
+  goStep1();
+}
+
+/* ---------- Ergebnis (live in Schritt 2) ---------- */
+function calcResult(){
+  hideErr("err2");
+  const doseUgH = deliveredUgPerH();
+  const newMassUg = massToUg(num("new_mass"), document.getElementById("new_massUnit").value);
+  const newVol = num("new_vol");
+  const box=document.getElementById("newRate");
+  const sub=document.getElementById("newRateSub");
+  const cross=document.getElementById("crossCheck");
+
+  if(!isFinite(newMassUg)||newMassUg<=0||!isFinite(newVol)||newVol<=0){
+    box.innerHTML = "– <span>ml/h</span>";
+    sub.textContent = "Neue Konzentration eingeben…";
+    cross.innerHTML="";
+    return;
+  }
+  const newConcUgPerMl = newMassUg / newVol;
+  const w = num("weight");
+  const outUnit = document.getElementById("out_unit").value;
+
+  // Ausgabewert je nach gewählter Einheit aus der (konstanten) Dosis berechnen
+  let outVal, outLabel = {"ml/h":"ml/h","mg/h":"mg/h","ug/h":"µg/h","ug/min":"µg/min",
+    "ug/kg/min":"µg/kg/min","ug/kg/h":"µg/kg/h","mg/kg/h":"mg/kg/h","ng/kg/min":"ng/kg/min"}[outUnit];
+  switch(outUnit){
+    case "ml/h":      outVal = doseUgH / newConcUgPerMl; break;
+    case "mg/h":      outVal = doseUgH / 1000; break;
+    case "ug/h":      outVal = doseUgH; break;
+    case "ug/min":    outVal = doseUgH / 60; break;
+    case "ug/kg/min": outVal = doseUgH / w / 60; break;
+    case "ug/kg/h":   outVal = doseUgH / w; break;
+    case "mg/kg/h":   outVal = doseUgH / 1000 / w; break;
+    case "ng/kg/min": outVal = doseUgH / w / 60 * 1000; break;
+  }
+
+  // µg/kg-Ausgaben brauchen ein Gewicht
+  if(outUnit.includes("/kg/") && (!isFinite(w) || w<=0)){
+    box.innerHTML = "– <span>"+outLabel+"</span>";
+    sub.textContent = "Für diese Ausgabe-Einheit Gewicht in Schritt 1 eingeben.";
+    document.getElementById("newRateUnit").textContent = outLabel;
+  } else {
+    box.innerHTML = fmt(outVal) + " <span>"+outLabel+"</span>";
+    document.getElementById("newRateUnit").textContent = outLabel;
+    const newConcMgMl = newConcUgPerMl/1000;
+    const mlh = doseUgH / newConcUgPerMl;
+    let subTxt = "bei " + fmt(newMassUg/1000) + " mg / " + fmt(newVol) + " ml  (= " + fmt(newConcMgMl) + " mg/ml)";
+    if(outUnit!=="ml/h") subTxt += "  ·  entspricht " + fmt(mlh) + " ml/h";
+    sub.textContent = subTxt;
+  }
+
+  // Cross-Check: verabreichte Dosis in mehreren Einheiten
+  let lines = "<b>Kontrolle – verabreichte Dosis (unverändert):</b><br>";
+  lines += "• " + fmt(doseUgH/1000) + " mg/h &nbsp;|&nbsp; " + fmt(doseUgH) + " µg/h<br>";
+  if(isFinite(w)&&w>0){
+    lines += "• " + fmt(doseUgH/w/60) + " µg/kg/min &nbsp;|&nbsp; " + fmt(doseUgH/w) + " µg/kg/h";
+  } else {
+    lines += "<span style='color:#6b7c96'>• µg/kg-Angaben: Gewicht eingeben</span>";
+  }
+  cross.innerHTML = lines;
+}
+["new_mass","new_vol","new_massUnit","new_volUnit","out_unit"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", calcResult);
+  document.getElementById(id).addEventListener("change", calcResult);
+});
+</script>
+</body>
+</html>
