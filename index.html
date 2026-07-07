@@ -24,12 +24,20 @@
   .wrap{max-width:520px; margin:0 auto; padding:16px 16px 60px;}
   header{display:flex; align-items:center; gap:10px; padding:6px 2px 2px;}
   header h1{font-size:20px; margin:0; font-weight:700;}
+  .beta{font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+    color:#04120a; background:var(--warn); padding:3px 8px; border-radius:999px; align-self:center;}
   .lang{display:flex; gap:2px; margin-left:auto; background:var(--card);
     border:1px solid var(--line); border-radius:999px; padding:2px; flex:none;}
   .lang button{background:transparent; border:none; color:var(--muted); font-size:12px;
     font-weight:800; padding:5px 11px; border-radius:999px; cursor:pointer; width:auto;}
   .lang button.active{background:var(--accent2); color:#eafff5;}
   .tagline{font-size:12px; color:var(--muted); margin:2px 2px 14px;}
+  .seg{display:flex; gap:4px; background:var(--card2); border:1px solid var(--line);
+    border-radius:12px; padding:4px;}
+  .seg button{flex:1; background:transparent; border:none; color:var(--muted);
+    font-weight:700; font-size:14px; padding:11px 6px; border-radius:9px; cursor:pointer;}
+  .seg button.active{background:var(--accent2); color:#eafff5;}
+  .limit-hint{font-size:11px; color:#7f8ca6; line-height:1.4; margin:6px 2px 0;}
   .steps{display:flex; gap:8px; margin-bottom:14px;}
   .steps .s{flex:1; text-align:center; font-size:12px; padding:7px 4px; border-radius:10px;
     background:var(--card); color:var(--muted); border:1px solid transparent;}
@@ -46,7 +54,7 @@
     font-size:17px; font-weight:600; outline:none;}
   input:focus,select:focus{border-color:var(--blue);}
   input::placeholder{color:#5b6b86; font-weight:500;}
-  .unit-sel{max-width:92px; font-size:15px; padding:14px 6px;}
+  .unit-sel{max-width:98px; font-size:15px; padding:14px 6px;}
   .rate-grid{display:flex; gap:8px;}
   .rate-grid input{flex:1.1;}
   .rate-grid select{flex:1.4;}
@@ -75,8 +83,10 @@
   .warn.show{display:block;}
   .warn.amber{background:#3a2f12; border:1px solid var(--warn); color:#ffd98a;}
   .warn.red{background:#3a1616; border:1px solid var(--danger); color:#ffb4b4;}
-  .disclaimer{font-size:11px; color:#6b7c96; line-height:1.5; text-align:center;
-    margin-top:20px; padding:0 6px;}
+  .disclaimer{font-size:12px; color:#9fb0c9; line-height:1.55; text-align:center;
+    margin-top:22px; padding:13px 14px; border:1px solid var(--line);
+    border-radius:12px; background:#182234;}
+  .disclaimer b{color:#dbe6f5;}
 
   /* Schalter */
   .toggle-row{display:flex; align-items:center; justify-content:space-between;
@@ -111,6 +121,7 @@
 <div class="wrap">
   <header>
     <h1 data-i18n="title">💉 Perfusor-Rechner</h1>
+    <span class="beta">Beta</span>
     <div class="lang">
       <button id="langDe" onclick="setLang('de')">DE</button>
       <button id="langEn" onclick="setLang('en')">EN</button>
@@ -129,16 +140,35 @@
       <h2 data-i18n="h2_current">Das läuft gerade</h2>
 
       <div class="row">
+        <label data-i18n="lbl_preset">Medikament (optional)</label>
+        <select id="preset" onchange="onPresetChange()"></select>
+      </div>
+
+      <div class="row">
+        <label data-i18n="lbl_access">Zugang</label>
+        <div class="seg accessSeg">
+          <button type="button" data-acc="periph" onclick="setAccess('periph')" data-i18n="acc_periph">Peripher</button>
+          <button type="button" data-acc="central" onclick="setAccess('central')" data-i18n="acc_central">Zentral</button>
+          <button type="button" data-acc="none" class="active" onclick="setAccess('none')" data-i18n="acc_none">k. A.</button>
+        </div>
+        <div class="limit-hint" data-i18n="limit_hint">Grenzwerte sind recherchierte Startwerte – gegen euren Hausstandard prüfen.</div>
+      </div>
+
+      <div class="row">
         <label data-i18n="lbl_conc_cur">Konzentration (aktuell)</label>
         <div class="conc">
           <input id="cur_mass" type="text" inputmode="decimal" data-ph="ph_mass5" placeholder="z.B. 5">
           <select id="cur_massUnit" class="unit-sel">
             <option value="mg">mg</option>
             <option value="ug">µg</option>
+            <option value="g">g</option>
+            <option value="%">%</option>
+            <option value="IU">IU</option>
+            <option value="mmol">mmol</option>
           </select>
-          <span class="sep" data-i18n="sep_in">in</span>
-          <input id="cur_vol" type="text" inputmode="decimal" data-ph="ph_vol" placeholder="50">
-          <select id="cur_volUnit" class="unit-sel"><option value="ml">ml</option></select>
+          <span class="sep volpart-cur" data-i18n="sep_in">in</span>
+          <input id="cur_vol" class="volpart-cur" type="text" inputmode="decimal" data-ph="ph_vol" placeholder="50">
+          <select id="cur_volUnit" class="unit-sel volpart-cur"><option value="ml">ml</option></select>
         </div>
         <div class="hint" data-i18n="hint_conc_cur">Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml".</div>
       </div>
@@ -147,16 +177,7 @@
         <label data-i18n="lbl_rate_cur">Laufrate (aktuell)</label>
         <div class="rate-grid">
           <input id="cur_rate" type="text" inputmode="decimal" data-ph="ph_rate" placeholder="Wert">
-          <select id="cur_rateUnit">
-            <option value="ml/h">ml/h</option>
-            <option value="mg/h">mg/h</option>
-            <option value="ug/h">µg/h</option>
-            <option value="ug/min">µg/min</option>
-            <option value="ug/kg/min" selected>µg/kg/min</option>
-            <option value="ug/kg/h">µg/kg/h</option>
-            <option value="mg/kg/h">mg/kg/h</option>
-            <option value="ng/kg/min">ng/kg/min</option>
-          </select>
+          <select id="cur_rateUnit"></select>
         </div>
       </div>
 
@@ -181,6 +202,8 @@
         <label class="switch"><input type="checkbox" class="sw-icu" onchange="setIcu(this.checked)"><span class="slider"></span></label>
       </div>
       <div class="panel" id="daily1"></div>
+
+      <div class="warn" id="warnBox1"></div>
     </div>
 
     <div class="err" id="err1"></div>
@@ -193,16 +216,7 @@
       <div class="lab" data-i18n="lab_newrate">NEUE LAUFRATE</div>
       <div class="big" id="newRate">– <span id="newRateUnit">ml/h</span></div>
       <div class="sub" id="newRateSub"></div>
-      <select id="out_unit" class="out-sel">
-        <option value="ml/h" selected>ml/h</option>
-        <option value="mg/h">mg/h</option>
-        <option value="ug/h">µg/h</option>
-        <option value="ug/min">µg/min</option>
-        <option value="ug/kg/min">µg/kg/min</option>
-        <option value="ug/kg/h">µg/kg/h</option>
-        <option value="mg/kg/h">mg/kg/h</option>
-        <option value="ng/kg/min">ng/kg/min</option>
-      </select>
+      <select id="out_unit" class="out-sel"></select>
       <div class="warn" id="warnBox"></div>
     </div>
 
@@ -212,15 +226,21 @@
         <label data-i18n="lbl_conc_new">Konzentration (Transport / neu)</label>
         <div class="conc">
           <input id="new_mass" type="text" inputmode="decimal" data-ph="ph_mass10" placeholder="z.B. 10">
-          <select id="new_massUnit" class="unit-sel">
-            <option value="mg">mg</option>
-            <option value="ug">µg</option>
-          </select>
-          <span class="sep" data-i18n="sep_in">in</span>
-          <input id="new_vol" type="text" inputmode="decimal" data-ph="ph_vol" placeholder="50">
-          <select id="new_volUnit" class="unit-sel"><option value="ml">ml</option></select>
+          <select id="new_massUnit" class="unit-sel"></select>
+          <span class="sep volpart-new" data-i18n="sep_in">in</span>
+          <input id="new_vol" class="volpart-new" type="text" inputmode="decimal" data-ph="ph_vol" placeholder="50">
+          <select id="new_volUnit" class="unit-sel volpart-new"><option value="ml">ml</option></select>
         </div>
         <div class="hint" data-i18n="hint_conc_new">Wirkstoffmenge im neuen Perfusor. Rechnet live.</div>
+      </div>
+
+      <div class="row">
+        <label data-i18n="lbl_access">Zugang</label>
+        <div class="seg accessSeg">
+          <button type="button" data-acc="periph" onclick="setAccess('periph')" data-i18n="acc_periph">Peripher</button>
+          <button type="button" data-acc="central" onclick="setAccess('central')" data-i18n="acc_central">Zentral</button>
+          <button type="button" data-acc="none" class="active" onclick="setAccess('none')" data-i18n="acc_none">k. A.</button>
+        </div>
       </div>
 
       <!-- Schalter Schritt 2 -->
@@ -270,7 +290,7 @@ const I18N = {
     hint_conc_new: "Wirkstoffmenge im neuen Perfusor. Rechnet live.",
     btn_back: "← Zurück",
     btn_reset: "Neue Rechnung",
-    disclaimer: "⚠️ Hilfsmittel — keine ärztliche Anordnung. Ergebnis immer plausibilisieren und nach dem Vier-Augen-Prinzip gegenprüfen. Keine Gewähr für Richtigkeit.",
+    disclaimer: "⚠️ Beta-Version — KEIN Medizinprodukt und keine ärztliche Anordnung, sondern ein unverbindliches Hilfsmittel ohne Gewähr. Jedes Ergebnis eigenständig plausibilisieren und nach dem Vier-Augen-Prinzip gegenprüfen. Hinterlegte Grenzwerte sind Startwerte und gegen den Hausstandard zu prüfen. Verwendung auf eigene Verantwortung.",
     out_prefix: "Ausgabe in ",
     ph_mass5: "z.B. 5", ph_mass10: "z.B. 10", ph_vol: "50", ph_rate: "Wert", ph_weight: "z.B. 75",
     weight_req: "<span style='color:#f59e0b'>Erforderlich</span> für diese Laufrate (…/kg/…).",
@@ -278,7 +298,8 @@ const I18N = {
     enter_new_conc: "Neue Konzentration eingeben…",
     enter_all_above: "Werte oben vollständig eingeben…",
     kg_need_weight_out: "Für diese Ausgabe-Einheit Gewicht in Schritt 1 eingeben.",
-    sub_at: (mMg,vol,cMgMl)=> "bei "+fmt(mMg)+" mg / "+fmt(vol)+" ml  (= "+fmt(cMgMl)+" mg/ml)",
+    sub_at: (amt,u,vol,cpm)=> "bei "+fmt(amt)+" "+u+" / "+fmt(vol)+" ml  (= "+fmt(cpm)+" "+u+"/ml)",
+    sub_at_pct: (pct,mgml)=> "bei "+fmt(pct)+" % (= "+fmt(mgml)+" mg/ml)",
     sub_equals: (mlh)=> "  ·  entspricht "+fmt(mlh)+" ml/h",
     err_fill: (list)=> "Bitte ausfüllen: "+list.join(", ")+".",
     field_mass_cur: "Wirkstoffmenge (aktuell)", field_vol_cur: "Volumen (aktuell)",
@@ -288,7 +309,15 @@ const I18N = {
     warn_low: (mlh)=> "ℹ️ Sehr niedrige Laufrate ("+fmt(mlh)+" ml/h). Je nach Pumpe evtl. unterhalb der minimalen Förderrate — bitte prüfen.",
     daily_title: "TAGESGESAMTDOSIS · 24 h",
     daily_drug: "Wirkstoff", daily_volume: "Volumen", daily_perkg: "pro kg",
-    rate_need_weight: "Gewicht nötig"
+    rate_need_weight: "Gewicht nötig",
+    lbl_preset: "Medikament (optional)", preset_none: "— kein Preset —",
+    lbl_access: "Zugang", acc_periph: "Peripher", acc_central: "Zentral", acc_none: "k. A.",
+    limit_hint: "Grenzwerte sind recherchierte Startwerte – gegen euren Hausstandard prüfen.",
+    periph_tag: "peripher",
+    warn_conc_periph: (l)=> "⛔ Konzentration zu hoch für peripheren Zugang (max "+l+"). Zentralen Zugang erwägen.",
+    warn_central_pref: ()=> "⚠️ Zentraler Zugang bevorzugt (Extravasat-/Vasopressor-Risiko).",
+    warn_max_rate: (l,note)=> "⚠️ Über empfohlener Maximalrate ("+l+(note?" · "+note:"")+"). Bitte prüfen.",
+    warn_max_daily: (l)=> "⛔ Tagesdosis über Höchstwert ("+l+"). Bitte prüfen."
   },
   en: {
     title: "💉 Infusion Rate Calculator",
@@ -310,7 +339,7 @@ const I18N = {
     hint_conc_new: "Drug amount in the new syringe. Updates live.",
     btn_back: "← Back",
     btn_reset: "New calculation",
-    disclaimer: "⚠️ Aid only — not a medical order. Always sanity-check the result and verify using the four-eyes principle. No guarantee of accuracy.",
+    disclaimer: "⚠️ Beta version — NOT a medical device and not a medical order, but an informal aid without warranty. Independently sanity-check every result and verify using the four-eyes principle. The built-in limits are starting values and must be verified against your local standard. Use at your own responsibility.",
     out_prefix: "Output in ",
     ph_mass5: "e.g. 5", ph_mass10: "e.g. 10", ph_vol: "50", ph_rate: "Value", ph_weight: "e.g. 75",
     weight_req: "<span style='color:#f59e0b'>Required</span> for this rate (…/kg/…).",
@@ -318,7 +347,8 @@ const I18N = {
     enter_new_conc: "Enter new concentration…",
     enter_all_above: "Enter all values above…",
     kg_need_weight_out: "Enter weight in step 1 for this output unit.",
-    sub_at: (mMg,vol,cMgMl)=> "at "+fmt(mMg)+" mg / "+fmt(vol)+" ml  (= "+fmt(cMgMl)+" mg/ml)",
+    sub_at: (amt,u,vol,cpm)=> "at "+fmt(amt)+" "+u+" / "+fmt(vol)+" ml  (= "+fmt(cpm)+" "+u+"/ml)",
+    sub_at_pct: (pct,mgml)=> "at "+fmt(pct)+" % (= "+fmt(mgml)+" mg/ml)",
     sub_equals: (mlh)=> "  ·  equals "+fmt(mlh)+" ml/h",
     err_fill: (list)=> "Please fill in: "+list.join(", ")+".",
     field_mass_cur: "Drug amount (current)", field_vol_cur: "Volume (current)",
@@ -328,7 +358,15 @@ const I18N = {
     warn_low: (mlh)=> "ℹ️ Very low rate ("+fmt(mlh)+" ml/h). May be below the minimum delivery rate of some pumps — please check.",
     daily_title: "TOTAL DAILY DOSE · 24 h",
     daily_drug: "Drug", daily_volume: "Volume", daily_perkg: "per kg",
-    rate_need_weight: "Weight needed"
+    rate_need_weight: "Weight needed",
+    lbl_preset: "Drug (optional)", preset_none: "— no preset —",
+    lbl_access: "Access", acc_periph: "Peripheral", acc_central: "Central", acc_none: "n/a",
+    limit_hint: "Limits are researched starting values – verify against your local standard.",
+    periph_tag: "peripheral",
+    warn_conc_periph: (l)=> "⛔ Concentration too high for peripheral access (max "+l+"). Consider a central line.",
+    warn_central_pref: ()=> "⚠️ Central access preferred (extravasation / vasopressor risk).",
+    warn_max_rate: (l,note)=> "⚠️ Above recommended maximum rate ("+l+(note?" · "+note:"")+"). Please check.",
+    warn_max_daily: (l)=> "⛔ Daily dose above maximum ("+l+"). Please check."
   }
 };
 let LANG = "de";
@@ -338,9 +376,107 @@ function t(key, ...args){
 }
 function locale(){ return LANG === "de" ? "de-DE" : "en-US"; }
 
-/* ---------- Anzeige-Symbole je Einheit (sprachunabhängig) ---------- */
-const UNIT_LABEL = {"ml/h":"ml/h","mg/h":"mg/h","ug/h":"µg/h","ug/min":"µg/min",
-  "ug/kg/min":"µg/kg/min","ug/kg/h":"µg/kg/h","mg/kg/h":"mg/kg/h","ng/kg/min":"ng/kg/min"};
+/* ================= Einheiten-Familien =================
+   Wirkstoffmengen können NICHT über Familien hinweg umgerechnet werden
+   (mg ↔ IU ↔ mmol ist wirkstoffspezifisch). Jede Familie hat eine Basis-Einheit,
+   in der intern die Dosis (Basis/h) geführt wird:
+     mass -> µg   |   iu -> IU   |   mmol -> mmol
+*/
+const AMOUNT_FACTOR = { ng:0.001, ug:1, mg:1000, g:1e6, IU:1, mmol:1 }; // -> Basis der jeweiligen Familie
+const AMOUNT_LABEL  = { mg:"mg", ug:"µg", g:"g", "%":"%", IU:"IU", mmol:"mmol" };
+const AMOUNT_UNITS  = { mass:["mg","ug","g","%"], iu:["IU"], mmol:["mmol"] };
+// „%“ ist eine fertige Konzentration (g/100 ml), unabhängig vom Volumen:
+//   x % = x g / 100 ml = x·10 mg/ml = x·10000 µg/ml (Basis µg).
+const RATE_UNITS = {
+  mass: ["ml/h","mg/h","ug/h","ug/min","ug/kg/min","ug/kg/h","mg/kg/h","ng/kg/min"],
+  iu:   ["ml/h","IU/h","IU/min","IU/kg/h","IU/kg/min"],
+  mmol: ["ml/h","mmol/h","mmol/min","mmol/kg/h","mmol/kg/min"]
+};
+const UNIT_LABEL = {
+  "ml/h":"ml/h",
+  "mg/h":"mg/h","ug/h":"µg/h","ug/min":"µg/min","ug/kg/min":"µg/kg/min","ug/kg/h":"µg/kg/h","mg/kg/h":"mg/kg/h","ng/kg/min":"ng/kg/min",
+  "IU/h":"IU/h","IU/min":"IU/min","IU/kg/h":"IU/kg/h","IU/kg/min":"IU/kg/min",
+  "mmol/h":"mmol/h","mmol/min":"mmol/min","mmol/kg/h":"mmol/kg/h","mmol/kg/min":"mmol/kg/min"
+};
+const FAMILY_BASE_UNIT = { iu:"IU", mmol:"mmol" }; // Anzeige der Basis-Menge (mass separat via mg/g)
+const RATE_DEFAULT = { mass:"ug/kg/min", iu:"IU/h", mmol:"mmol/h" };
+const AMOUNT_DEFAULT = { mass:"mg", iu:"IU", mmol:"mmol" };
+
+function familyOf(amountUnit){ return amountUnit==="IU" ? "iu" : (amountUnit==="mmol" ? "mmol" : "mass"); }
+let UNITS = []; // wird pro Familie aufgebaut (für „Andere Laufraten“)
+
+/* ================= Medikamenten-Presets =================
+   WICHTIG: Grenzwerte sind recherchierte Startwerte und MÜSSEN gegen den
+   jeweiligen Hausstandard/Apotheke geprüft werden. Intensivstationen weichen
+   bewusst ab. Konzentrationsgrenzen intern als Basis-Menge pro ml:
+     Masse -> µg/ml (12,5 % Glukose = 125000; 2 mg/ml = 2000)
+     mmol  -> mmol/ml (40 mmol/L = 0,04)
+   Limit-Typen:
+     centralPreferred  – peripher: zentraler Zugang bevorzugt (optional threshold-Rate)
+     maxConcPeripheral – peripher: max. Konzentration (basePerMl)
+     maxRate           – Maximalrate immer (unit/value)
+     maxRatePeripheral – Maximalrate nur peripher
+     maxDaily          – Tageshöchstdosis (unit/value), markiert in Intensivfunktion
+   Quellen (Kurz): Propofol/PRIS: LITFL. Noradrenalin zentral ~0,1 µg/kg/min: CCJM 2024.
+     Glukose peripher ≤12,5 %: PPN/Osmolarität-Leitlinien. Kalium peripher ≤40 mmol/L
+     & ≤10 mmol/h: KCl-Leitlinien. Amiodaron ≤2 mg/ml peripher / ~2,2 g/24 h: prüfen. */
+const PRESETS = [
+  { id:"noradrenalin", name:{de:"Noradrenalin", en:"Norepinephrine"}, unit:"mg", family:"mass",
+    concs:[{mass:5,vol:50}], limits:[ {kind:"centralPreferred", threshold:{unit:"ug/kg/min", value:0.1}} ] },
+  { id:"adrenalin", name:{de:"Adrenalin", en:"Epinephrine"}, unit:"mg", family:"mass",
+    concs:[{mass:5,vol:50}], limits:[ {kind:"centralPreferred"} ] },
+  { id:"dobutamin", name:{de:"Dobutamin", en:"Dobutamine"}, unit:"mg", family:"mass",
+    concs:[{mass:250,vol:50}], limits:[ {kind:"centralPreferred"} ] },
+  { id:"propofol", name:{de:"Propofol", en:"Propofol"}, unit:"%", family:"mass",
+    concs:[{mass:2,vol:0}], limits:[ {kind:"maxRate", unit:"mg/kg/h", value:4, label:"4 mg/kg/h", note:"PRIS"} ] },
+  { id:"midazolam", name:{de:"Midazolam", en:"Midazolam"}, unit:"mg", family:"mass",
+    concs:[{mass:50,vol:50}], limits:[] },
+  { id:"glukose", name:{de:"Glukose", en:"Glucose"}, unit:"%", family:"mass",
+    concs:[{mass:40,vol:0}], limits:[ {kind:"maxConcPeripheral", basePerMl:125000, label:"12,5 %"} ] },
+  { id:"kalium", name:{de:"Kalium (KCl)", en:"Potassium (KCl)"}, unit:"mmol", family:"mmol",
+    concs:[{mass:40,vol:50}], limits:[ {kind:"maxConcPeripheral", basePerMl:0.04, label:"40 mmol/L"},
+                                       {kind:"maxRatePeripheral", unit:"mmol/h", value:10, label:"10 mmol/h"} ] },
+  { id:"heparin", name:{de:"Heparin", en:"Heparin"}, unit:"IU", family:"iu",
+    concs:[{mass:25000,vol:50}], limits:[] },
+  { id:"insulin", name:{de:"Insulin", en:"Insulin"}, unit:"IU", family:"iu",
+    concs:[{mass:50,vol:50}], limits:[] },
+  { id:"amiodaron", name:{de:"Amiodaron", en:"Amiodarone"}, unit:"mg", family:"mass",
+    concs:[{mass:300,vol:50}], limits:[ {kind:"maxConcPeripheral", basePerMl:2000, label:"2 mg/ml"},
+                                        {kind:"maxDaily", unit:"g", value:2.2, label:"2,2 g/24 h"} ] }
+];
+function presetById(id){ return PRESETS.find(p=>p.id===id) || null; }
+function activePreset(){ const p=presetById(document.getElementById("preset").value); return (p && p.family===currentFamily()) ? p : null; }
+
+let ACCESS = "none"; // 'periph' | 'central' | 'none'
+let presetSetting = false;
+function setAccess(a){
+  ACCESS = a;
+  document.querySelectorAll(".accessSeg button").forEach(b=>b.classList.toggle("active", b.dataset.acc===a));
+  if(step2Visible()) calcResult();
+  renderExtras(); // aktualisiert auch die Warnung auf Seite 1
+}
+function buildPresetOptions(){
+  const sel = document.getElementById("preset");
+  const prev = sel.value;
+  let html = '<option value="">'+t("preset_none")+'</option>';
+  html += PRESETS.map(p=>'<option value="'+p.id+'">'+p.name[LANG]+'</option>').join("");
+  sel.innerHTML = html;
+  sel.value = prev;
+}
+function onPresetChange(){
+  const p = presetById(document.getElementById("preset").value);
+  if(p){
+    presetSetting = true;
+    document.getElementById("cur_massUnit").value = p.unit;
+    buildUnitDropdowns(p.family);
+    const c = p.concs[0];
+    document.getElementById("cur_mass").value = c.mass;
+    if(p.unit!=="%") document.getElementById("cur_vol").value = c.vol;
+    updateWeightVisibility(); updateVolVisibility("cur"); updateVolVisibility("new");
+    presetSetting = false;
+  }
+  if(step2Visible()) calcResult(); else renderExtras();
+}
 
 /* ---------- Helfer ---------- */
 function num(id){
@@ -350,74 +486,90 @@ function num(id){
   if(v==="") return NaN;
   return parseFloat(v);
 }
-function massToUg(val, unit){ return unit==="mg" ? val*1000 : val; } // mg->µg, µg->µg
 function fmt(x){
   if(!isFinite(x)) return "–";
   if(x===0) return "0";
   const a=Math.abs(x);
-  let d = a>=10?1 : a>=1?2 : a>=0.1?3 : 4; // kleine Werte feiner auflösen
+  let d = a>=10?1 : a>=1?2 : a>=0.1?3 : 4;
   return x.toLocaleString(locale(),{minimumFractionDigits:0, maximumFractionDigits:d});
 }
-function fmtMass(mg){ // Wirkstoffmenge: mg, ab 1000 mg -> g
+function fmtMass(mg){ // Massefamilie: mg, ab 1000 mg -> g
   if(!isFinite(mg)) return "–";
   if(Math.abs(mg) >= 1000) return fmt(mg/1000) + " g";
   return fmt(mg) + " mg";
 }
 
-/* ---------- Kernrechnung: liefert Dosis in µg/h ---------- */
-function deliveredUgPerH(){
-  const rate = num("cur_rate");
-  const unit = document.getElementById("cur_rateUnit").value;
-  const w = num("weight");
-  const massUg = massToUg(num("cur_mass"), document.getElementById("cur_massUnit").value);
-  const vol = num("cur_vol");
-  const concUgPerMl = massUg / vol; // µg pro ml
-  switch(unit){
-    case "ml/h":     return rate * concUgPerMl;
-    case "mg/h":     return rate * 1000;
-    case "ug/h":     return rate;
-    case "ug/min":   return rate * 60;
-    case "ug/kg/min":return rate * w * 60;
-    case "ug/kg/h":  return rate * w;
-    case "mg/kg/h":  return rate * 1000 * w;
-    case "ng/kg/min":return rate * w * 60 / 1000;
-    default: return NaN;
-  }
+/* ---------- Generische Umrechnung (familienübergreifend, aber je Rechnung eine Familie) ----------
+   Basis-Menge einer Einheit: ml -> über Konzentration (Basis/ml), sonst AMOUNT_FACTOR. */
+function parseUnit(u){ const p=u.split("/"); return { amount:p[0], perKg:p.includes("kg"), time:p[p.length-1] }; }
+function amtFactor(amount, concBasePerMl){ return amount==="ml" ? concBasePerMl : AMOUNT_FACTOR[amount]; }
+function toDose(value, unit, w, concBasePerMl){ // -> Basis/h
+  const {amount,perKg,time} = parseUnit(unit);
+  return value * amtFactor(amount, concBasePerMl) * (perKg?w:1) * (time==="min"?60:1);
 }
-function needsWeight(){
-  return document.getElementById("cur_rateUnit").value.includes("/kg/");
+function fromDose(dose, unit, w, concBasePerMl){ // Basis/h -> Einheit
+  const {amount,perKg,time} = parseUnit(unit);
+  return dose / ( amtFactor(amount, concBasePerMl) * (perKg?w:1) * (time==="min"?60:1) );
 }
-// Ausgabewert aus konstanter Dosis (µg/h) in gewünschter Einheit
-function rateFromDose(doseUgH, unit, concUgPerMl, w){
-  switch(unit){
-    case "ml/h":      return doseUgH / concUgPerMl;
-    case "mg/h":      return doseUgH / 1000;
-    case "ug/h":      return doseUgH;
-    case "ug/min":    return doseUgH / 60;
-    case "ug/kg/min": return doseUgH / w / 60;
-    case "ug/kg/h":   return doseUgH / w;
-    case "mg/kg/h":   return doseUgH / 1000 / w;
-    case "ng/kg/min": return doseUgH / w / 60 * 1000;
-  }
+function concBase(id_mass, id_unit, id_vol){ // Basis-Menge pro ml
+  const unit = document.getElementById(id_unit).value;
+  if(unit==="%") return num(id_mass) * 10000; // g/100 ml -> µg/ml
+  return num(id_mass) * AMOUNT_FACTOR[unit] / num(id_vol);
 }
+// „in … ml“-Feld bei %-Konzentration ausblenden
+function updateVolVisibility(prefix){
+  const u = document.getElementById(prefix+"_massUnit").value;
+  const hide = (u==="%");
+  document.querySelectorAll(".volpart-"+prefix).forEach(e=>{ e.style.display = hide ? "none" : ""; });
+}
+function deliveredDose(){ // Basis/h aus aktueller Seite
+  const cbp = concBase("cur_mass","cur_massUnit","cur_vol");
+  return toDose(num("cur_rate"), document.getElementById("cur_rateUnit").value, num("weight"), cbp);
+}
+function needsWeight(){ return document.getElementById("cur_rateUnit").value.includes("/kg/"); }
 
 /* ---------- Plausibilitäts-Schwellen (anpassbar) ---------- */
-const WARN = {
-  pumpMax:   99,    // ml/h: typisches Maximum vieler Spritzenpumpen
-  implausible: 1000,// ml/h: praktisch immer Eingabefehler (Einheit/Konzentration)
-  lowRate:   0.5    // ml/h: je nach Pumpe evtl. unter minimaler Förderrate
-};
-function checkWarnings(mlh){
-  const box = document.getElementById("warnBox");
-  box.className = "warn"; box.innerHTML = "";
-  if(!isFinite(mlh) || mlh<=0) return;
-  if(mlh > WARN.implausible){
-    box.className = "warn red show";   box.innerHTML = t("warn_implausible", mlh);
-  } else if(mlh > WARN.pumpMax){
-    box.className = "warn amber show";  box.innerHTML = t("warn_pumpmax", WARN.pumpMax);
-  } else if(mlh < WARN.lowRate){
-    box.className = "warn amber show";  box.innerHTML = t("warn_low", mlh);
+const WARN = { pumpMax:99, implausible:1000, lowRate:0.5 };
+function clearWarnings(id){ const b=document.getElementById(id); b.className="warn"; b.innerHTML=""; }
+// Kombiniert Pumpen-Plausibilität (mlh) mit Preset-Grenzwerten (Konzentration/Zugang/Rate).
+function renderWarnings(id, mlh, dose, conc, w){
+  const lines = []; let sev = "amber";
+  // 1) Pumpen-/Plausibilitätsgrenzen (physikalisch, familienunabhängig)
+  if(isFinite(mlh) && mlh>0){
+    if(mlh > WARN.implausible){ lines.push(t("warn_implausible", mlh)); sev="red"; }
+    else if(mlh > WARN.pumpMax){ lines.push(t("warn_pumpmax", WARN.pumpMax)); }
+    else if(mlh < WARN.lowRate){ lines.push(t("warn_low", mlh)); }
   }
+  // 2) Medikamenten-Preset-Grenzwerte
+  const p = activePreset();
+  if(p && isFinite(dose)){
+    for(const L of p.limits){
+      if(L.kind==="maxConcPeripheral"){
+        if(ACCESS==="periph" && isFinite(conc) && conc > L.basePerMl){ lines.push(t("warn_conc_periph", L.label)); sev="red"; }
+      } else if(L.kind==="centralPreferred"){
+        if(ACCESS==="periph"){
+          let hit = true;
+          if(L.threshold){ const r=fromDose(dose, L.threshold.unit, w, conc); hit = isFinite(r) && r > L.threshold.value; }
+          if(hit) lines.push(t("warn_central_pref"));
+        }
+      } else if(L.kind==="maxRate"){
+        const r = fromDose(dose, L.unit, w, conc);
+        if(isFinite(r) && r > L.value) lines.push(t("warn_max_rate", L.label, L.note||""));
+      } else if(L.kind==="maxRatePeripheral"){
+        if(ACCESS==="periph"){ const r=fromDose(dose, L.unit, w, conc); if(isFinite(r) && r > L.value) lines.push(t("warn_max_rate", L.label, t("periph_tag"))); }
+      }
+    }
+  }
+  const box = document.getElementById(id);
+  if(lines.length){ box.className = "warn "+(sev==="red"?"red":"amber")+" show"; box.innerHTML = lines.join("<br>"); }
+  else clearWarnings(id);
+}
+// Warnung für die aktuell laufende Seite (Schritt 1) auf Basis der aktuellen Konzentration
+function updateStep1Warnings(){
+  const c = curContext();
+  if(!c.ok){ clearWarnings("warnBox1"); return; }
+  const mlh = fromDose(c.dose, "ml/h", c.w, c.conc);
+  renderWarnings("warnBox1", mlh, c.dose, c.conc, c.w);
 }
 
 /* ---------- Gewichtsfeld-Hinweis ---------- */
@@ -426,47 +578,44 @@ function updateWeightVisibility(){
   hint.innerHTML = needsWeight() ? t("weight_req") : t("weight_not_needed");
 }
 
-/* ---------- Schalter-Status (auf beiden Seiten synchron) ---------- */
+/* ---------- Schalter-Status ---------- */
 const state = { other:false, icu:false };
 function setOther(v){
-  state.other = v;
+  state.other=v;
   document.querySelectorAll(".sw-other").forEach(c=>c.checked=v);
   document.getElementById("other1").classList.toggle("show", v);
   document.getElementById("other2").classList.toggle("show", v);
   renderExtras();
 }
 function setIcu(v){
-  state.icu = v;
+  state.icu=v;
   document.querySelectorAll(".sw-icu").forEach(c=>c.checked=v);
   document.getElementById("daily1").classList.toggle("show", v);
   document.getElementById("daily2").classList.toggle("show", v);
   renderExtras();
 }
 
-/* ---------- Kontexte für beide Seiten ---------- */
+/* ---------- Kontexte ---------- */
 function curContext(){
-  const dose = deliveredUgPerH();
-  const conc = massToUg(num("cur_mass"), document.getElementById("cur_massUnit").value) / num("cur_vol");
+  const dose = deliveredDose();
+  const conc = concBase("cur_mass","cur_massUnit","cur_vol");
+  const family = familyOf(document.getElementById("cur_massUnit").value);
   const w = num("weight");
   const ok = isFinite(dose) &&
-             num("cur_mass")>0 && num("cur_vol")>0 && isFinite(num("cur_rate")) && num("cur_rate")>=0 &&
+             num("cur_mass")>0 && isFinite(conc) && conc>0 && isFinite(num("cur_rate")) && num("cur_rate")>=0 &&
              (!needsWeight() || (isFinite(w)&&w>0));
-  return {dose, conc, w, ok};
+  return {dose, conc, w, ok, family};
 }
 function newContext(){
-  const dose = deliveredUgPerH(); // identische Dosis
-  const conc = massToUg(num("new_mass"), document.getElementById("new_massUnit").value) / num("new_vol");
+  const dose = deliveredDose();
+  const conc = concBase("new_mass","new_massUnit","new_vol");
   const w = num("weight");
   const c1 = curContext();
-  const ok = c1.ok && num("new_mass")>0 && num("new_vol")>0 && isFinite(conc);
-  return {dose, conc, w, ok};
+  const ok = c1.ok && num("new_mass")>0 && isFinite(conc) && conc>0;
+  return {dose, conc, w, ok, family:c1.family};
 }
 
-/* ---------- Panels rendern ---------- */
-const UNITS = [
-  ["ml/h","ml/h",false],["mg/h","mg/h",false],["µg/h","ug/h",false],["µg/min","ug/min",false],
-  ["µg/kg/min","ug/kg/min",true],["µg/kg/h","ug/kg/h",true],["mg/kg/h","mg/kg/h",true],["ng/kg/min","ng/kg/min",true]
-];
+/* ---------- Panels ---------- */
 function ratesHTML(dose, conc, w){
   let h="";
   for(const [name,key,needW] of UNITS){
@@ -474,57 +623,57 @@ function ratesHTML(dose, conc, w){
     if(needW && !(isFinite(w)&&w>0)){
       right = "<span class='na'>"+t("rate_need_weight")+"</span>";
     } else {
-      right = "<span class='rv'><b>"+fmt(rateFromDose(dose,key,conc,w))+"</b></span>";
+      right = "<span class='rv'><b>"+fmt(fromDose(dose,key,w,conc))+"</b></span>";
     }
     h += "<div class='rateline'><span class='rn'>"+name+"</span>"+right+"</div>";
   }
   return h;
 }
-function dailyHTML(dose, conc, w){
-  const mgDay = dose*24/1000;    // Wirkstoff mg / 24 h
-  const mlDay = (dose/conc)*24;  // Volumen ml / 24 h (konzentrationsabhängig)
+function dailyHTML(dose, conc, w, family){
+  const perDayBase = dose*24;                    // Basis-Menge / 24 h
+  const drug = (family==="mass") ? fmtMass(perDayBase/1000)
+                                 : fmt(perDayBase)+" "+FAMILY_BASE_UNIT[family];
+  const volDay = (dose/conc)*24;
   let s = "<span class='t'>"+t("daily_title")+"</span>";
-  s += t("daily_drug")+": <b>"+fmtMass(mgDay)+"</b> / 24 h<br>";
-  s += t("daily_volume")+": <b>"+fmt(mlDay)+" ml</b> / 24 h";
+  s += t("daily_drug")+": <b>"+drug+"</b> / 24 h<br>";
+  s += t("daily_volume")+": <b>"+fmt(volDay)+" ml</b> / 24 h";
   if(isFinite(w)&&w>0){
-    s += "<br>"+t("daily_perkg")+": <b>"+fmt(mgDay/w)+" mg/kg</b> / 24 h";
+    const perkg = (family==="mass") ? fmt(perDayBase/1000/w)+" mg/kg"
+                                    : fmt(perDayBase/w)+" "+FAMILY_BASE_UNIT[family]+"/kg";
+    s += "<br>"+t("daily_perkg")+": <b>"+perkg+"</b> / 24 h";
+  }
+  // Tageshöchstdosis (Preset) – markieren wenn überschritten
+  const p = activePreset();
+  if(p){
+    for(const L of p.limits){
+      if(L.kind==="maxDaily"){
+        const dIn = perDayBase / AMOUNT_FACTOR[L.unit];
+        if(dIn > L.value) s += "<br><span style='color:#ffb4b4'>"+t("warn_max_daily", L.label)+"</span>";
+      }
+    }
   }
   return s;
 }
 function renderExtras(){
   const c1 = curContext();
-  if(state.other){
-    document.getElementById("other1").innerHTML = c1.ok
-      ? ratesHTML(c1.dose,c1.conc,c1.w)
-      : "<div class='placeholder'>"+t("enter_all_above")+"</div>";
-  }
-  if(state.icu){
-    document.getElementById("daily1").innerHTML = c1.ok
-      ? "<div class='daily'>"+dailyHTML(c1.dose,c1.conc,c1.w)+"</div>"
-      : "<div class='placeholder'>"+t("enter_all_above")+"</div>";
-  }
+  if(state.other) document.getElementById("other1").innerHTML = c1.ok ? ratesHTML(c1.dose,c1.conc,c1.w) : "<div class='placeholder'>"+t("enter_all_above")+"</div>";
+  if(state.icu)   document.getElementById("daily1").innerHTML = c1.ok ? "<div class='daily'>"+dailyHTML(c1.dose,c1.conc,c1.w,c1.family)+"</div>" : "<div class='placeholder'>"+t("enter_all_above")+"</div>";
   const c2 = newContext();
-  if(state.other){
-    document.getElementById("other2").innerHTML = c2.ok
-      ? ratesHTML(c2.dose,c2.conc,c2.w)
-      : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
-  }
-  if(state.icu){
-    document.getElementById("daily2").innerHTML = c2.ok
-      ? "<div class='daily'>"+dailyHTML(c2.dose,c2.conc,c2.w)+"</div>"
-      : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
-  }
+  if(state.other) document.getElementById("other2").innerHTML = c2.ok ? ratesHTML(c2.dose,c2.conc,c2.w) : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
+  if(state.icu)   document.getElementById("daily2").innerHTML = c2.ok ? "<div class='daily'>"+dailyHTML(c2.dose,c2.conc,c2.w,c2.family)+"</div>" : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
+  updateStep1Warnings();
 }
 
 /* ---------- Navigation ---------- */
 function showErr(id, msg){ const e=document.getElementById(id); e.textContent=msg; e.style.display="block"; }
 function hideErr(id){ document.getElementById(id).style.display="none"; }
+function step2Visible(){ return !document.getElementById("view2").classList.contains("hidden"); }
 
 function goStep2(){
   hideErr("err1");
   const errs=[];
   if(!isFinite(num("cur_mass"))||num("cur_mass")<=0) errs.push(t("field_mass_cur"));
-  if(!isFinite(num("cur_vol"))||num("cur_vol")<=0)  errs.push(t("field_vol_cur"));
+  if(document.getElementById("cur_massUnit").value!=="%" && (!isFinite(num("cur_vol"))||num("cur_vol")<=0)) errs.push(t("field_vol_cur"));
   if(!isFinite(num("cur_rate"))||num("cur_rate")<0) errs.push(t("field_rate"));
   if(needsWeight() && (!isFinite(num("weight"))||num("weight")<=0)) errs.push(t("field_weight"));
   if(errs.length){ showErr("err1", t("err_fill", errs)); return; }
@@ -550,46 +699,66 @@ function goStep1(){
 }
 function resetAll(){
   ["cur_mass","cur_vol","cur_rate","weight","new_mass","new_vol"].forEach(id=>document.getElementById(id).value="");
-  goStep1();
-  renderExtras();
+  goStep1(); renderExtras();
 }
-function step2Visible(){ return !document.getElementById("view2").classList.contains("hidden"); }
 
-/* ---------- Ergebnis (live in Schritt 2) ---------- */
+/* ---------- Ergebnis ---------- */
 function calcResult(){
   hideErr("err2");
-  const doseUgH = deliveredUgPerH();
-  const newMassUg = massToUg(num("new_mass"), document.getElementById("new_massUnit").value);
-  const newVol = num("new_vol");
+  updateVolVisibility("new");
+  const dose = deliveredDose();
+  const newAmt = num("new_mass"), newVol = num("new_vol");
+  const nUnit = document.getElementById("new_massUnit").value;
+  const concBasePerMl = concBase("new_mass","new_massUnit","new_vol");
   const box=document.getElementById("newRate");
   const sub=document.getElementById("newRateSub");
 
-  if(!isFinite(newMassUg)||newMassUg<=0||!isFinite(newVol)||newVol<=0){
+  if(!(newAmt>0) || !isFinite(concBasePerMl) || concBasePerMl<=0){
     box.innerHTML = "– <span id='newRateUnit'>ml/h</span>";
     sub.textContent = t("enter_new_conc");
-    checkWarnings(NaN);
-    renderExtras();
-    return;
+    clearWarnings("warnBox"); renderExtras(); return;
   }
-  const newConcUgPerMl = newMassUg / newVol;
   const w = num("weight");
   const outUnit = document.getElementById("out_unit").value;
   const outLabel = UNIT_LABEL[outUnit];
-  const mlh = doseUgH / newConcUgPerMl; // äquivalente ml/h für Plausibilitätsprüfung
+  const mlh = fromDose(dose, "ml/h", w, concBasePerMl);
 
   if(outUnit.includes("/kg/") && (!isFinite(w) || w<=0)){
     box.innerHTML = "– <span id='newRateUnit'>"+outLabel+"</span>";
     sub.textContent = t("kg_need_weight_out");
   } else {
-    const outVal = rateFromDose(doseUgH, outUnit, newConcUgPerMl, w);
+    const outVal = fromDose(dose, outUnit, w, concBasePerMl);
     box.innerHTML = fmt(outVal) + " <span id='newRateUnit'>"+outLabel+"</span>";
-    const newConcMgMl = newConcUgPerMl/1000;
-    let subTxt = t("sub_at", newMassUg/1000, newVol, newConcMgMl);
+    let subTxt = (nUnit==="%")
+      ? t("sub_at_pct", newAmt, newAmt*10)
+      : t("sub_at", newAmt, AMOUNT_LABEL[nUnit], newVol, newAmt/newVol);
     if(outUnit!=="ml/h") subTxt += t("sub_equals", mlh);
     sub.textContent = subTxt;
   }
-  checkWarnings(mlh);
+  renderWarnings("warnBox", mlh, dose, concBasePerMl, w);
   renderExtras();
+}
+
+/* ---------- Dropdowns pro Familie aufbauen ---------- */
+function setOptions(sel, values, labelFn, preferred){
+  const prev = sel.value;
+  sel.innerHTML = values.map(v=>'<option value="'+v+'">'+labelFn(v)+'</option>').join("");
+  sel.value = values.includes(prev) ? prev : (values.includes(preferred)?preferred:values[0]);
+}
+function buildUnitDropdowns(family){
+  setOptions(document.getElementById("cur_rateUnit"), RATE_UNITS[family], v=>UNIT_LABEL[v], RATE_DEFAULT[family]);
+  setOptions(document.getElementById("out_unit"),     RATE_UNITS[family], v=>t("out_prefix")+UNIT_LABEL[v], "ml/h");
+  setOptions(document.getElementById("new_massUnit"),  AMOUNT_UNITS[family], v=>AMOUNT_LABEL[v], AMOUNT_DEFAULT[family]);
+  UNITS = RATE_UNITS[family].map(v=>[UNIT_LABEL[v], v, v.includes("/kg/")]);
+}
+function currentFamily(){ return familyOf(document.getElementById("cur_massUnit").value); }
+function onFamilyChange(){
+  if(!presetSetting) document.getElementById("preset").value = ""; // manuelle Einheitenänderung -> Preset lösen
+  buildUnitDropdowns(currentFamily());
+  updateWeightVisibility();
+  updateVolVisibility("cur");
+  updateVolVisibility("new");
+  if(step2Visible()) calcResult(); else renderExtras();
 }
 
 /* ---------- Sprache anwenden ---------- */
@@ -597,43 +766,42 @@ function setLang(lang){
   LANG = (lang==="en") ? "en" : "de";
   try{ localStorage.setItem("perfusor_lang", LANG); }catch(e){}
   document.documentElement.lang = LANG;
-  document.title = t("title").replace(/^\S+\s/, ""); // Titel ohne Emoji
   document.getElementById("langDe").classList.toggle("active", LANG==="de");
   document.getElementById("langEn").classList.toggle("active", LANG==="en");
-  // Statische Texte
   document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i18n")); });
   document.querySelectorAll("[data-ph]").forEach(el=>{ el.setAttribute("placeholder", t(el.getAttribute("data-ph"))); });
-  // Ausgabe-Dropdown (Präfix + Einheiten-Symbol)
+  // Ausgabe-Dropdown: Präfix neu setzen (Einheiten-Symbole bleiben)
   Array.from(document.getElementById("out_unit").options).forEach(o=>{ o.textContent = t("out_prefix") + UNIT_LABEL[o.value]; });
-  // Dynamische Bereiche neu aufbauen
+  buildPresetOptions(); // Medikamentennamen lokalisiert
   updateWeightVisibility();
   if(step2Visible()) calcResult(); else renderExtras();
 }
 
 /* ---------- Event-Listener ---------- */
+document.getElementById("cur_massUnit").addEventListener("change", onFamilyChange);
 document.getElementById("cur_rateUnit").addEventListener("change", ()=>{ updateWeightVisibility(); renderExtras(); });
-["cur_mass","cur_massUnit","cur_vol","cur_rate","weight"].forEach(id=>{
+["cur_mass","cur_vol","cur_rate","weight"].forEach(id=>{
   document.getElementById(id).addEventListener("input", renderExtras);
   document.getElementById(id).addEventListener("change", renderExtras);
 });
-["new_mass","new_vol","new_massUnit","new_volUnit","out_unit"].forEach(id=>{
+["new_mass","new_vol","new_massUnit","out_unit"].forEach(id=>{
   document.getElementById(id).addEventListener("input", calcResult);
   document.getElementById(id).addEventListener("change", calcResult);
 });
 
-/* ---------- Start: gespeicherte oder Browser-Sprache ---------- */
+/* ---------- Start ---------- */
+buildUnitDropdowns(currentFamily());
+updateVolVisibility("cur");
+updateVolVisibility("new");
 (function initLang(){
-  let saved = null;
-  try{ saved = localStorage.getItem("perfusor_lang"); }catch(e){}
+  let saved=null; try{ saved=localStorage.getItem("perfusor_lang"); }catch(e){}
   const guess = (navigator.language||"de").toLowerCase().startsWith("de") ? "de" : "en";
   setLang(saved || guess);
 })();
 
-/* ---------- PWA: Service Worker registrieren (nur über http/https) ---------- */
+/* ---------- PWA ---------- */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {/* offline-Modus optional */});
-  });
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(()=>{}); });
 }
 </script>
 </body>
