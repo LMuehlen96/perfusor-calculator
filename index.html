@@ -38,6 +38,10 @@
     font-weight:700; font-size:14px; padding:11px 6px; border-radius:9px; cursor:pointer;}
   .seg button.active{background:var(--accent2); color:#eafff5;}
   .limit-hint{font-size:11px; color:#7f8ca6; line-height:1.4; margin:6px 2px 0;}
+  .divi{font-size:12px; color:#8fd9ff; line-height:1.4; margin:6px 0 0; display:none;}
+  .divi.show{display:block;}
+  .divi b{color:#c9edff;}
+  body.basic .adv{display:none !important;}
   .steps{display:flex; gap:8px; margin-bottom:14px;}
   .steps .s{flex:1; text-align:center; font-size:12px; padding:7px 4px; border-radius:10px;
     background:var(--card); color:var(--muted); border:1px solid transparent;}
@@ -87,6 +91,23 @@
     margin-top:22px; padding:13px 14px; border:1px solid var(--line);
     border-radius:12px; background:#182234;}
   .disclaimer b{color:#dbe6f5;}
+  .fb-btn{display:block; margin:14px auto 0; background:transparent; border:1px solid var(--line);
+    color:var(--muted); font-size:13px; font-weight:700; padding:10px 18px; border-radius:999px; cursor:pointer;}
+  .fb-overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none;
+    align-items:center; justify-content:center; padding:16px; z-index:100;}
+  .fb-overlay.show{display:flex;}
+  .fb-modal{background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:18px; max-width:460px; width:100%; max-height:88vh; overflow:auto;}
+  .fb-modal h3{margin:0 0 6px; font-size:17px;}
+  .fb-intro{font-size:13px; color:var(--muted); margin:0 0 8px;}
+  .fb-check{display:flex; align-items:flex-start; gap:10px; font-size:14px; padding:8px 0;
+    color:var(--txt); cursor:pointer; font-weight:600;}
+  .fb-check input{width:auto; margin-top:2px;}
+  .fb-modal textarea{width:100%; min-height:88px; background:var(--card2); color:var(--txt);
+    border:1px solid var(--line); border-radius:12px; padding:12px; font-size:15px; margin-top:10px;
+    font-family:inherit; resize:vertical;}
+  .fb-actions{display:flex; gap:10px; margin-top:14px;}
+  .fb-actions .btn{margin-top:0;}
 
   /* Schalter */
   .toggle-row{display:flex; align-items:center; justify-content:space-between;
@@ -129,6 +150,11 @@
   </header>
   <div class="tagline" data-i18n="tagline">Dosis bleibt gleich</div>
 
+  <div class="seg" id="modeSeg" style="margin-bottom:14px;">
+    <button type="button" data-mode="basic" class="active" onclick="setMode('basic')" data-i18n="mode_basic">Basis</button>
+    <button type="button" data-mode="adv" onclick="setMode('adv')" data-i18n="mode_advanced">Erweitert 🔒</button>
+  </div>
+
   <div class="steps">
     <div class="s active" id="stepTab1" data-i18n="step1">1 · Das läuft gerade</div>
     <div class="s" id="stepTab2" data-i18n="step2">2 · Umrechnen auf</div>
@@ -139,12 +165,12 @@
     <div class="card">
       <h2 data-i18n="h2_current">Das läuft gerade</h2>
 
-      <div class="row">
+      <div class="row adv">
         <label data-i18n="lbl_preset">Medikament (optional)</label>
         <select id="preset" onchange="onPresetChange()"></select>
       </div>
 
-      <div class="row">
+      <div class="row adv">
         <label data-i18n="lbl_access">Zugang</label>
         <div class="seg accessSeg">
           <button type="button" data-acc="periph" onclick="setAccess('periph')" data-i18n="acc_periph">Peripher</button>
@@ -171,6 +197,7 @@
           <select id="cur_volUnit" class="unit-sel volpart-cur"><option value="ml">ml</option></select>
         </div>
         <div class="hint" data-i18n="hint_conc_cur">Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml".</div>
+        <div class="divi" id="diviHint"></div>
       </div>
 
       <div class="row">
@@ -191,17 +218,17 @@
       </div>
 
       <!-- Schalter Schritt 1 -->
-      <div class="toggle-row">
+      <div class="toggle-row adv">
         <span class="tlbl" data-i18n="toggle_other">Andere Laufraten anzeigen</span>
         <label class="switch"><input type="checkbox" class="sw-other" onchange="setOther(this.checked)"><span class="slider"></span></label>
       </div>
-      <div class="panel" id="other1"></div>
+      <div class="panel adv" id="other1"></div>
 
-      <div class="toggle-row">
+      <div class="toggle-row adv">
         <span class="tlbl" data-i18n="toggle_icu">Intensivfunktion (Tagesdosis)</span>
         <label class="switch"><input type="checkbox" class="sw-icu" onchange="setIcu(this.checked)"><span class="slider"></span></label>
       </div>
-      <div class="panel" id="daily1"></div>
+      <div class="panel adv" id="daily1"></div>
 
       <div class="warn" id="warnBox1"></div>
     </div>
@@ -216,7 +243,7 @@
       <div class="lab" data-i18n="lab_newrate">NEUE LAUFRATE</div>
       <div class="big" id="newRate">– <span id="newRateUnit">ml/h</span></div>
       <div class="sub" id="newRateSub"></div>
-      <select id="out_unit" class="out-sel"></select>
+      <select id="out_unit" class="out-sel adv"></select>
       <div class="warn" id="warnBox"></div>
     </div>
 
@@ -232,9 +259,10 @@
           <select id="new_volUnit" class="unit-sel volpart-new"><option value="ml">ml</option></select>
         </div>
         <div class="hint" data-i18n="hint_conc_new">Wirkstoffmenge im neuen Perfusor. Rechnet live.</div>
+        <div class="divi" id="diviHint2"></div>
       </div>
 
-      <div class="row">
+      <div class="row adv">
         <label data-i18n="lbl_access">Zugang</label>
         <div class="seg accessSeg">
           <button type="button" data-acc="periph" onclick="setAccess('periph')" data-i18n="acc_periph">Peripher</button>
@@ -244,17 +272,17 @@
       </div>
 
       <!-- Schalter Schritt 2 -->
-      <div class="toggle-row">
+      <div class="toggle-row adv">
         <span class="tlbl" data-i18n="toggle_other">Andere Laufraten anzeigen</span>
         <label class="switch"><input type="checkbox" class="sw-other" onchange="setOther(this.checked)"><span class="slider"></span></label>
       </div>
-      <div class="panel" id="other2"></div>
+      <div class="panel adv" id="other2"></div>
 
-      <div class="toggle-row">
+      <div class="toggle-row adv">
         <span class="tlbl" data-i18n="toggle_icu">Intensivfunktion (Tagesdosis)</span>
         <label class="switch"><input type="checkbox" class="sw-icu" onchange="setIcu(this.checked)"><span class="slider"></span></label>
       </div>
-      <div class="panel" id="daily2"></div>
+      <div class="panel adv" id="daily2"></div>
     </div>
 
     <div class="err" id="err2"></div>
@@ -265,6 +293,27 @@
   </section>
 
   <div class="disclaimer" data-i18n="disclaimer"></div>
+
+  <button class="fb-btn" onclick="openFeedback()" data-i18n="feedback_btn">✉︎ Feedback</button>
+</div>
+
+<div class="fb-overlay" id="fbOverlay" onclick="if(event.target===this)closeFeedback()">
+  <div class="fb-modal">
+    <h3 data-i18n="feedback_title">Feedback / Fehler melden</h3>
+    <p class="fb-intro" data-i18n="feedback_intro">Was möchtest du melden? (Mehrfachauswahl)</p>
+    <label class="fb-check"><input type="checkbox" value="fb_wrong_calc"><span data-i18n="fb_wrong_calc">Umrechnung falsch/unerwartet</span></label>
+    <label class="fb-check"><input type="checkbox" value="fb_unit"><span data-i18n="fb_unit">Einheit fehlt oder falsch</span></label>
+    <label class="fb-check"><input type="checkbox" value="fb_limit"><span data-i18n="fb_limit">Grenzwert unpassend</span></label>
+    <label class="fb-check"><input type="checkbox" value="fb_drug"><span data-i18n="fb_drug">Medikament fehlt</span></label>
+    <label class="fb-check"><input type="checkbox" value="fb_conc"><span data-i18n="fb_conc">Standardkonzentration/Träger falsch</span></label>
+    <label class="fb-check"><input type="checkbox" value="fb_ui"><span data-i18n="fb_ui">Bedienung/Anzeige</span></label>
+    <label class="fb-check"><input type="checkbox" value="fb_other"><span data-i18n="fb_other">Sonstiges</span></label>
+    <textarea id="fbText" data-ph="fb_placeholder" placeholder="Beschreibung, betroffenes Medikament, Werte …"></textarea>
+    <div class="fb-actions">
+      <button class="btn btn-ghost" style="flex:0.8" onclick="closeFeedback()" data-i18n="fb_cancel">Abbrechen</button>
+      <button class="btn btn-primary" style="flex:1.4" onclick="sendFeedback()" data-i18n="fb_send">Als E-Mail senden</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -317,7 +366,22 @@ const I18N = {
     warn_conc_periph: (l)=> "⛔ Konzentration zu hoch für peripheren Zugang (max "+l+"). Zentralen Zugang erwägen.",
     warn_central_pref: ()=> "⚠️ Zentraler Zugang bevorzugt (Extravasat-/Vasopressor-Risiko).",
     warn_max_rate: (l,note)=> "⚠️ Über empfohlener Maximalrate ("+l+(note?" · "+note:"")+"). Bitte prüfen.",
-    warn_max_daily: (l)=> "⛔ Tagesdosis über Höchstwert ("+l+"). Bitte prüfen."
+    warn_max_daily: (l)=> "⛔ Tagesdosis über Höchstwert ("+l+"). Bitte prüfen.",
+    mode_basic: "Basis", mode_advanced: "Erweitert 🔒",
+    pw_prompt: "Passwort für die erweiterte Ansicht:", pw_wrong: "Falsches Passwort.",
+    divi_std: "DIVI-Standard", carrier: "Träger",
+    carrier_none: "unverdünnt", carrier_na: "— (Hauswert prüfen)",
+    acc_rec_central: "zentral empfohlen", acc_rec_periph: "peripher möglich", acc_rec_dilute: "peripher nur ausreichend verdünnt",
+    acc_rec_gluc: "peripher ≤ 12,5 %, ab 20 % zentral",
+    feedback_btn: "✉︎ Feedback", feedback_title: "Feedback / Fehler melden",
+    feedback_intro: "Was möchtest du melden? (Mehrfachauswahl)",
+    fb_wrong_calc: "Umrechnung falsch/unerwartet", fb_unit: "Einheit fehlt oder falsch",
+    fb_limit: "Grenzwert unpassend", fb_drug: "Medikament fehlt",
+    fb_conc: "Standardkonzentration/Träger falsch", fb_ui: "Bedienung/Anzeige", fb_other: "Sonstiges",
+    fb_placeholder: "Beschreibung, betroffenes Medikament, Werte …",
+    fb_send: "Als E-Mail senden", fb_cancel: "Abbrechen",
+    fb_mail_subject: "Perfusor-Rechner Feedback (Beta)",
+    fb_mail_intro: "Gemeldete Punkte:"
   },
   en: {
     title: "💉 Infusion Rate Calculator",
@@ -366,7 +430,22 @@ const I18N = {
     warn_conc_periph: (l)=> "⛔ Concentration too high for peripheral access (max "+l+"). Consider a central line.",
     warn_central_pref: ()=> "⚠️ Central access preferred (extravasation / vasopressor risk).",
     warn_max_rate: (l,note)=> "⚠️ Above recommended maximum rate ("+l+(note?" · "+note:"")+"). Please check.",
-    warn_max_daily: (l)=> "⛔ Daily dose above maximum ("+l+"). Please check."
+    warn_max_daily: (l)=> "⛔ Daily dose above maximum ("+l+"). Please check.",
+    mode_basic: "Basic", mode_advanced: "Advanced 🔒",
+    pw_prompt: "Password for advanced view:", pw_wrong: "Wrong password.",
+    divi_std: "DIVI standard", carrier: "Carrier",
+    carrier_none: "undiluted", carrier_na: "— (check local)",
+    acc_rec_central: "central recommended", acc_rec_periph: "peripheral possible", acc_rec_dilute: "peripheral only if sufficiently diluted",
+    acc_rec_gluc: "peripheral ≤ 12.5%, ≥ 20% central",
+    feedback_btn: "✉︎ Feedback", feedback_title: "Feedback / report an issue",
+    feedback_intro: "What would you like to report? (multiple)",
+    fb_wrong_calc: "Conversion wrong/unexpected", fb_unit: "Unit missing or wrong",
+    fb_limit: "Limit inappropriate", fb_drug: "Drug missing",
+    fb_conc: "Standard concentration/carrier wrong", fb_ui: "Usability/display", fb_other: "Other",
+    fb_placeholder: "Description, affected drug, values …",
+    fb_send: "Send as email", fb_cancel: "Cancel",
+    fb_mail_subject: "Perfusor Calculator feedback (Beta)",
+    fb_mail_intro: "Reported items:"
   }
 };
 let LANG = "de";
@@ -420,30 +499,62 @@ let UNITS = []; // wird pro Familie aufgebaut (für „Andere Laufraten“)
    Quellen (Kurz): Propofol/PRIS: LITFL. Noradrenalin zentral ~0,1 µg/kg/min: CCJM 2024.
      Glukose peripher ≤12,5 %: PPN/Osmolarität-Leitlinien. Kalium peripher ≤40 mmol/L
      & ≤10 mmol/h: KCl-Leitlinien. Amiodaron ≤2 mg/ml peripher / ~2,2 g/24 h: prüfen. */
+// std/carrier nach DIVI-Standardkonzentrationsliste (Stand 20.03.2025). carrier-Codes s. carrierText().
 const PRESETS = [
   { id:"noradrenalin", name:{de:"Noradrenalin", en:"Norepinephrine"}, unit:"mg", family:"mass",
-    concs:[{mass:5,vol:50}], limits:[ {kind:"centralPreferred", threshold:{unit:"ug/kg/min", value:0.1}} ] },
+    concs:[{mass:5,vol:50}], std:"0,1 mg/ml (5 mg/50 ml)", carrier:"g5_nacl",
+    limits:[ {kind:"centralPreferred", threshold:{unit:"ug/kg/min", value:0.1}} ] },
   { id:"adrenalin", name:{de:"Adrenalin", en:"Epinephrine"}, unit:"mg", family:"mass",
-    concs:[{mass:5,vol:50}], limits:[ {kind:"centralPreferred"} ] },
+    concs:[{mass:5,vol:50}], std:"0,1 mg/ml (5 mg/50 ml)", carrier:"g5_nacl",
+    limits:[ {kind:"centralPreferred"} ] },
   { id:"dobutamin", name:{de:"Dobutamin", en:"Dobutamine"}, unit:"mg", family:"mass",
-    concs:[{mass:250,vol:50}], limits:[ {kind:"centralPreferred"} ] },
+    concs:[{mass:250,vol:50}], std:"5 mg/ml (250 mg/50 ml)", carrier:"none",
+    limits:[ {kind:"centralPreferred"},
+             {kind:"maxRate", unit:"ug/kg/min", value:50, label:"50 µg/kg/min", note:"Fachinfo-Max"} ] },
+  { id:"urapidil", name:{de:"Urapidil", en:"Urapidil"}, unit:"mg", family:"mass",
+    concs:[{mass:250,vol:50}], std:"5 mg/ml (250 mg/50 ml)", carrier:"none", limits:[] },
   { id:"propofol", name:{de:"Propofol", en:"Propofol"}, unit:"%", family:"mass",
-    concs:[{mass:2,vol:0}], limits:[ {kind:"maxRate", unit:"mg/kg/h", value:4, label:"4 mg/kg/h", note:"PRIS"} ] },
+    concs:[{mass:2,vol:0}], std:"20 mg/ml (2 %, 1000 mg/50 ml)", carrier:"none",
+    limits:[ {kind:"maxRate", unit:"mg/kg/h", value:4, label:"4 mg/kg/h", note:"PRIS"} ] },
   { id:"midazolam", name:{de:"Midazolam", en:"Midazolam"}, unit:"mg", family:"mass",
-    concs:[{mass:50,vol:50}], limits:[] },
-  { id:"glukose", name:{de:"Glukose", en:"Glucose"}, unit:"%", family:"mass",
-    concs:[{mass:40,vol:0}], limits:[ {kind:"maxConcPeripheral", basePerMl:125000, label:"12,5 %"} ] },
-  { id:"kalium", name:{de:"Kalium (KCl)", en:"Potassium (KCl)"}, unit:"mmol", family:"mmol",
-    concs:[{mass:40,vol:50}], limits:[ {kind:"maxConcPeripheral", basePerMl:0.04, label:"40 mmol/L"},
-                                       {kind:"maxRatePeripheral", unit:"mmol/h", value:10, label:"10 mmol/h"} ] },
-  { id:"heparin", name:{de:"Heparin", en:"Heparin"}, unit:"IU", family:"iu",
-    concs:[{mass:25000,vol:50}], limits:[] },
-  { id:"insulin", name:{de:"Insulin", en:"Insulin"}, unit:"IU", family:"iu",
-    concs:[{mass:50,vol:50}], limits:[] },
+    concs:[{mass:100,vol:50}], std:"2 mg/ml (100 mg/50 ml)", carrier:"none", limits:[] },
+  { id:"morphin", name:{de:"Morphin", en:"Morphine"}, unit:"mg", family:"mass",
+    concs:[{mass:50,vol:50}], std:"1 mg/ml (50 mg/50 ml)", carrier:"g5_nacl", limits:[] },
+  { id:"sufentanil", name:{de:"Sufentanil", en:"Sufentanil"}, unit:"ug", family:"mass",
+    concs:[{mass:250,vol:50}], std:"5 µg/ml (250 µg/50 ml)", carrier:"none", limits:[] },
+  { id:"fentanyl", name:{de:"Fentanyl", en:"Fentanyl"}, unit:"ug", family:"mass",
+    concs:[{mass:2500,vol:50}], std:"nicht in DIVI-Liste – Hauswert prüfen", carrier:"na", limits:[] },
   { id:"amiodaron", name:{de:"Amiodaron", en:"Amiodarone"}, unit:"mg", family:"mass",
-    concs:[{mass:300,vol:50}], limits:[ {kind:"maxConcPeripheral", basePerMl:2000, label:"2 mg/ml"},
-                                        {kind:"maxDaily", unit:"g", value:2.2, label:"2,2 g/24 h"} ] }
+    concs:[{mass:1050,vol:50}], std:"21 mg/ml (1050 mg/50 ml); RTU 20 mg/ml", carrier:"g5",
+    limits:[ {kind:"maxConcPeripheral", basePerMl:2000, label:"2 mg/ml"},
+             {kind:"maxDaily", unit:"g", value:2.2, label:"2,2 g/24 h (inkl. Bolus)"} ] },
+  { id:"glukose", name:{de:"Glukose", en:"Glucose"}, unit:"%", family:"mass",
+    concs:[{mass:40,vol:0}], std:"—", carrier:"na",
+    limits:[ {kind:"maxConcPeripheral", basePerMl:125000, label:"12,5 %"} ] },
+  { id:"kalium", name:{de:"Kalium (KCl)", en:"Potassium (KCl)"}, unit:"mmol", family:"mmol",
+    concs:[{mass:50,vol:50}], std:"1 mmol/ml (50 mmol/50 ml)", carrier:"none",
+    limits:[ {kind:"maxConcPeripheral", basePerMl:0.04, label:"40 mmol/L"},
+             {kind:"maxRatePeripheral", unit:"mmol/h", value:10, label:"10 mmol/h"} ] },
+  { id:"heparin", name:{de:"Heparin", en:"Heparin"}, unit:"IU", family:"iu",
+    concs:[{mass:25000,vol:50}], std:"500 IE/ml (25 000 IE/50 ml)", carrier:"nacl", limits:[] },
+  { id:"insulin", name:{de:"Insulin", en:"Insulin"}, unit:"IU", family:"iu",
+    concs:[{mass:50,vol:50}], std:"1 IE/ml (50 IE/50 ml)", carrier:"nacl", limits:[] }
 ];
+function carrierText(code){
+  if(code==="g5_nacl") return "G5% / NaCl 0,9%";
+  if(code==="nacl") return "NaCl 0,9%";
+  if(code==="g5") return "G5%";
+  if(code==="none") return t("carrier_none");
+  return t("carrier_na");
+}
+// Empfohlener Zugang je Wirkstoff (Fachinfo/Leitlinie). Default: peripher möglich.
+const ACCESS_REC = { noradrenalin:"central", adrenalin:"central", dobutamin:"central",
+                     amiodaron:"central", kalium:"dilute" };
+function accessRecText(id){
+  if(id==="glukose") return t("acc_rec_gluc"); // konzentrationsabhängig (FI: ≥20 % zentral)
+  const r = ACCESS_REC[id] || "periph";
+  return r==="central" ? t("acc_rec_central") : (r==="dilute" ? t("acc_rec_dilute") : t("acc_rec_periph"));
+}
 function presetById(id){ return PRESETS.find(p=>p.id===id) || null; }
 function activePreset(){ const p=presetById(document.getElementById("preset").value); return (p && p.family===currentFamily()) ? p : null; }
 
@@ -475,7 +586,60 @@ function onPresetChange(){
     updateWeightVisibility(); updateVolVisibility("cur"); updateVolVisibility("new");
     presetSetting = false;
   }
+  updateDiviHint();
   if(step2Visible()) calcResult(); else renderExtras();
+}
+// DIVI-Standardkonzentration + empfohlene Trägerlösung anzeigen (überschreibbar)
+function updateDiviHint(){
+  const p = presetById(document.getElementById("preset").value);
+  const els = [document.getElementById("diviHint"), document.getElementById("diviHint2")];
+  if(!p){ els.forEach(e=>{ e.className="divi"; e.innerHTML=""; }); return; }
+  const html = "<b>"+t("divi_std")+":</b> "+p.std+" · <b>"+t("carrier")+":</b> "+carrierText(p.carrier)
+             + " · <b>"+t("lbl_access")+":</b> "+accessRecText(p.id);
+  els.forEach(e=>{ e.className="divi show adv"; e.innerHTML=html; });
+}
+
+/* ---------- Basis / Erweitert (Erweitert passwortgeschützt) ----------
+   Hinweis: reine Client-Sperre (kein echter Zugriffsschutz). Passwort als Hash hinterlegt. */
+let MODE = "basic";
+let ADMIN_UNLOCKED = false;
+const ADMIN_HASH = 2462096983; // djb2("Admin#967")
+function djb2(s){ let h=5381; for(let i=0;i<s.length;i++) h=(((h<<5)+h)+s.charCodeAt(i))>>>0; return h; }
+function applyMode(m){
+  MODE = (m==="adv") ? "adv" : "basic";
+  document.body.classList.toggle("basic", MODE==="basic");
+  document.querySelectorAll("#modeSeg button").forEach(b=>b.classList.toggle("active", b.dataset.mode===MODE));
+  if(step2Visible()) calcResult(); else renderExtras();
+}
+function setMode(m){
+  if(m==="adv" && !ADMIN_UNLOCKED){
+    const pw = prompt(t("pw_prompt"));
+    if(pw===null){ applyMode("basic"); return; }           // Abbruch -> Basis
+    if(djb2(pw)!==ADMIN_HASH){ alert(t("pw_wrong")); applyMode("basic"); return; }
+    ADMIN_UNLOCKED = true;                                   // pro Sitzung freigeschaltet
+  }
+  applyMode(m);
+}
+
+/* ---------- Feedback (öffnet vorausgefüllte E-Mail) ---------- */
+const FEEDBACK_EMAIL = "ljmuehlen@gmail.com";
+function openFeedback(){ document.getElementById("fbOverlay").classList.add("show"); }
+function closeFeedback(){ document.getElementById("fbOverlay").classList.remove("show"); }
+function sendFeedback(){
+  const items=[];
+  document.querySelectorAll("#fbOverlay .fb-check input:checked").forEach(c=>{
+    const span=c.parentElement.querySelector("span"); items.push("- "+(span?span.textContent:c.value));
+  });
+  const details=(document.getElementById("fbText").value||"").trim();
+  const p=document.getElementById("preset");
+  const ctx=[];
+  if(p&&p.value) ctx.push("Preset: "+p.value);
+  ctx.push("Zugang: "+ACCESS, "Sprache: "+LANG, "Modus: "+MODE);
+  let body = t("fb_mail_intro")+"\n"+(items.length?items.join("\n"):"—")+"\n\n";
+  if(details) body += details+"\n\n";
+  body += "["+ctx.join(" | ")+"]";
+  window.location.href = "mailto:"+FEEDBACK_EMAIL+"?subject="+encodeURIComponent(t("fb_mail_subject"))+"&body="+encodeURIComponent(body);
+  closeFeedback();
 }
 
 /* ---------- Helfer ---------- */
@@ -773,6 +937,7 @@ function setLang(lang){
   // Ausgabe-Dropdown: Präfix neu setzen (Einheiten-Symbole bleiben)
   Array.from(document.getElementById("out_unit").options).forEach(o=>{ o.textContent = t("out_prefix") + UNIT_LABEL[o.value]; });
   buildPresetOptions(); // Medikamentennamen lokalisiert
+  updateDiviHint();     // DIVI-Empfehlung neu lokalisieren
   updateWeightVisibility();
   if(step2Visible()) calcResult(); else renderExtras();
 }
@@ -798,6 +963,7 @@ updateVolVisibility("new");
   const guess = (navigator.language||"de").toLowerCase().startsWith("de") ? "de" : "en";
   setLang(saved || guess);
 })();
+applyMode("basic"); // Grundeinstellung: Basis-Ansicht
 
 /* ---------- PWA ---------- */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
