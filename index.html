@@ -41,6 +41,8 @@
   .divi{font-size:12px; color:#8fd9ff; line-height:1.4; margin:6px 0 0; display:none;}
   .divi.show{display:block;}
   .divi b{color:#c9edff;}
+  .dur{font-size:13px; color:#a9e5cf; line-height:1.4; margin:7px 0 0; display:none; font-weight:600;}
+  .dur.show{display:block;}
   body.basic .adv{display:none !important;}
   .steps{display:flex; gap:8px; margin-bottom:14px;}
   .steps .s{flex:1; text-align:center; font-size:12px; padding:7px 4px; border-radius:10px;
@@ -198,6 +200,7 @@
         </div>
         <div class="hint" data-i18n="hint_conc_cur">Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml".</div>
         <div class="divi" id="diviHint"></div>
+        <div class="dur" id="dur1"></div>
       </div>
 
       <div class="row">
@@ -260,6 +263,7 @@
         </div>
         <div class="hint" data-i18n="hint_conc_new">Wirkstoffmenge im neuen Perfusor. Rechnet live.</div>
         <div class="divi" id="diviHint2"></div>
+        <div class="dur" id="dur2"></div>
       </div>
 
       <div class="row adv">
@@ -369,6 +373,7 @@ const I18N = {
     warn_max_daily: (l)=> "⛔ Tagesdosis über Höchstwert ("+l+"). Bitte prüfen.",
     mode_basic: "Basis", mode_advanced: "Erweitert 🔒",
     pw_prompt: "Passwort für die erweiterte Ansicht:", pw_wrong: "Falsches Passwort.",
+    dur_text: (d,vol,mlh)=> "⏱ Laufdauer der Spritze: ca. "+d+" ("+fmt(vol)+" ml bei "+fmt(mlh)+" ml/h)",
     divi_std: "DIVI-Standard", carrier: "Träger",
     carrier_none: "unverdünnt", carrier_na: "— (Hauswert prüfen)",
     acc_rec_central: "zentral empfohlen", acc_rec_periph: "peripher möglich", acc_rec_dilute: "peripher nur ausreichend verdünnt",
@@ -433,6 +438,7 @@ const I18N = {
     warn_max_daily: (l)=> "⛔ Daily dose above maximum ("+l+"). Please check.",
     mode_basic: "Basic", mode_advanced: "Advanced 🔒",
     pw_prompt: "Password for advanced view:", pw_wrong: "Wrong password.",
+    dur_text: (d,vol,mlh)=> "⏱ Syringe run time: ca. "+d+" ("+fmt(vol)+" ml at "+fmt(mlh)+" ml/h)",
     divi_std: "DIVI standard", carrier: "Carrier",
     carrier_none: "undiluted", carrier_na: "— (check local)",
     acc_rec_central: "central recommended", acc_rec_periph: "peripheral possible", acc_rec_dilute: "peripheral only if sufficiently diluted",
@@ -662,6 +668,20 @@ function fmtMass(mg){ // Massefamilie: mg, ab 1000 mg -> g
   if(Math.abs(mg) >= 1000) return fmt(mg/1000) + " g";
   return fmt(mg) + " mg";
 }
+// Laufdauer als „X h Y min“ (bzw. Tage / nur Minuten)
+function fmtDuration(hours){
+  if(!isFinite(hours) || hours<=0) return null;
+  if(hours>=48){ const d=Math.floor(hours/24); const h=Math.round(hours-d*24); return d+" d "+h+" h"; }
+  let h=Math.floor(hours), m=Math.round((hours-h)*60);
+  if(m===60){ h++; m=0; }
+  return h===0 ? (m+" min") : (h+" h "+m+" min");
+}
+// Laufdauer-Zeile aus Volumen (ml) und Rate (ml/h)
+function durLine(vol, mlh){
+  if(!(vol>0) || !isFinite(mlh) || mlh<=0) return "";
+  const d = fmtDuration(vol/mlh);
+  return d ? t("dur_text", d, vol, mlh) : "";
+}
 
 /* ---------- Generische Umrechnung (familienübergreifend, aber je Rechnung eine Familie) ----------
    Basis-Menge einer Einheit: ml -> über Konzentration (Basis/ml), sonst AMOUNT_FACTOR. */
@@ -826,6 +846,13 @@ function renderExtras(){
   if(state.other) document.getElementById("other2").innerHTML = c2.ok ? ratesHTML(c2.dose,c2.conc,c2.w) : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
   if(state.icu)   document.getElementById("daily2").innerHTML = c2.ok ? "<div class='daily'>"+dailyHTML(c2.dose,c2.conc,c2.w,c2.family)+"</div>" : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
   updateStep1Warnings();
+  // Laufdauer Schritt 1 (aktuelle Spritze) – in Basis + Erweitert sichtbar
+  const el1 = document.getElementById("dur1");
+  const unit1 = document.getElementById("cur_massUnit").value;
+  if(c1.ok && unit1!=="%"){
+    const line = durLine(num("cur_vol"), fromDose(c1.dose, "ml/h", c1.w, c1.conc));
+    el1.className = line ? "dur show" : "dur"; el1.innerHTML = line;
+  } else { el1.className = "dur"; el1.innerHTML = ""; }
 }
 
 /* ---------- Navigation ---------- */
@@ -880,6 +907,7 @@ function calcResult(){
   if(!(newAmt>0) || !isFinite(concBasePerMl) || concBasePerMl<=0){
     box.innerHTML = "– <span id='newRateUnit'>ml/h</span>";
     sub.textContent = t("enter_new_conc");
+    const eld=document.getElementById("dur2"); eld.className="dur"; eld.innerHTML="";
     clearWarnings("warnBox"); renderExtras(); return;
   }
   const w = num("weight");
@@ -900,6 +928,10 @@ function calcResult(){
     sub.textContent = subTxt;
   }
   renderWarnings("warnBox", mlh, dose, concBasePerMl, w);
+  // Laufdauer der neuen Spritze (Volumen ÷ ml/h)
+  const eld=document.getElementById("dur2");
+  if(nUnit!=="%"){ const line=durLine(newVol, mlh); eld.className=line?"dur show":"dur"; eld.innerHTML=line; }
+  else { eld.className="dur"; eld.innerHTML=""; }
   renderExtras();
 }
 
