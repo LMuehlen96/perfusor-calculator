@@ -309,17 +309,24 @@
     <h2 data-i18n="gtt_title">Tropfen-Umrechner (Schwerkraft-Infusion)</h2>
     <div class="row">
       <label data-i18n="gtt_factor_lbl">Tropffaktor</label>
-      <select id="gtt_factor" onchange="gttSync('mlh')">
+      <select id="gtt_factor" onchange="gttSync('flow')">
         <option value="20">20 gtt/ml (Standard/Makro)</option>
         <option value="60">60 gtt/ml (Mikro/Pädiatrie)</option>
         <option value="15">15 gtt/ml</option>
         <option value="10">10 gtt/ml</option>
       </select>
     </div>
+    <div class="row">
+      <label data-i18n="gtt_rateunit_lbl">Laufraten-Einheit</label>
+      <select id="gtt_rateUnit" onchange="gttSync('flow')">
+        <option value="ml/h" selected>ml/h</option>
+        <option value="ml/min">ml/min</option>
+      </select>
+    </div>
     <div style="display:flex; gap:10px;">
       <div style="flex:1">
-        <label>ml/h</label>
-        <input id="gtt_mlh" type="text" inputmode="decimal" placeholder="ml/h" oninput="gttSync('mlh')">
+        <label data-i18n="gtt_rate_lbl">Laufrate</label>
+        <input id="gtt_mlh" type="text" inputmode="decimal" placeholder="Laufrate" oninput="gttSync('flow')">
       </div>
       <div style="flex:1">
         <label data-i18n="gtt_drops_lbl">Tropfen/min (gtt)</label>
@@ -411,6 +418,7 @@ const I18N = {
     dur_text: (d,vol,mlh)=> "⏱ Laufdauer der Spritze: ca. "+d+" ("+fmt(vol)+" ml bei "+fmt(mlh)+" ml/h)",
     ref_label: "weitere Referenzen",
     gtt_title: "Tropfen-Umrechner (Schwerkraft-Infusion)", gtt_factor_lbl: "Tropffaktor",
+    gtt_rateunit_lbl: "Laufraten-Einheit", gtt_rate_lbl: "Laufrate",
     gtt_drops_lbl: "Tropfen/min (gtt)", gtt_from_result: "aus Ergebnis übernehmen",
     gtt_hint: "Tropfen/min zählen und ml/h ablesen – oder umgekehrt. Tropffaktor vom Infusionsset prüfen (Standard-Set meist 20 gtt/ml).",
     gtt_no_rate: "Noch keine Rate vorhanden – bitte zuerst Konzentration und Laufrate eingeben.",
@@ -482,6 +490,7 @@ const I18N = {
     dur_text: (d,vol,mlh)=> "⏱ Syringe run time: ca. "+d+" ("+fmt(vol)+" ml at "+fmt(mlh)+" ml/h)",
     ref_label: "more references",
     gtt_title: "Drip-rate converter (gravity infusion)", gtt_factor_lbl: "Drop factor",
+    gtt_rateunit_lbl: "Rate unit", gtt_rate_lbl: "Rate",
     gtt_drops_lbl: "Drops/min (gtt)", gtt_from_result: "use result",
     gtt_hint: "Count drops/min to read ml/h – or vice versa. Check the drop factor on your infusion set (standard set usually 20 gtt/ml).",
     gtt_no_rate: "No rate yet – please enter concentration and rate first.",
@@ -530,7 +539,7 @@ const UNIT_LABEL = {
   "mmol/h":"mmol/h","mmol/min":"mmol/min","mmol/kg/h":"mmol/kg/h","mmol/kg/min":"mmol/kg/min"
 };
 const FAMILY_BASE_UNIT = { iu:"IU", mmol:"mmol" }; // Anzeige der Basis-Menge (mass separat via mg/g)
-const RATE_DEFAULT = { mass:"ug/kg/min", iu:"IU/h", mmol:"mmol/h" };
+const RATE_DEFAULT = { mass:"ml/h", iu:"ml/h", mmol:"ml/h" }; // Standard-Laufrateneinheit: ml/h
 const AMOUNT_DEFAULT = { mass:"mg", iu:"IU", mmol:"mmol" };
 
 function familyOf(amountUnit){ return amountUnit==="IU" ? "iu" : (amountUnit==="mmol" ? "mmol" : "mass"); }
@@ -710,25 +719,30 @@ function sendFeedback(){
    gtt/min = ml/h · Tropffaktor / 60 ;  ml/h = gtt/min · 60 / Tropffaktor */
 let LAST_MLH = NaN; // zuletzt berechnete ml/h aus Schritt 2 (für „aus Ergebnis übernehmen“)
 function gttFactor(){ return parseFloat(document.getElementById("gtt_factor").value) || 20; }
+function gttRateUnit(){ return document.getElementById("gtt_rateUnit").value; } // 'ml/h' | 'ml/min'
+function toMlh(v, u){ return u==="ml/min" ? v*60 : v; }   // Eingabe-Einheit -> ml/h
+function fromMlh(mlh, u){ return u==="ml/min" ? mlh/60 : mlh; } // ml/h -> Anzeige-Einheit
 function gttSync(from){
-  const f = gttFactor();
+  const f = gttFactor(), u = gttRateUnit();
   if(from==="drops"){
     const d = num("gtt_drops");
-    document.getElementById("gtt_mlh").value = (isFinite(d) && d>=0) ? fmt(d*60/f) : "";
-  } else {
-    const m = num("gtt_mlh");
-    document.getElementById("gtt_drops").value = (isFinite(m) && m>=0) ? fmt(m*f/60) : "";
+    const mlh = (isFinite(d) && d>=0) ? d*60/f : NaN;      // gtt/min -> ml/h
+    document.getElementById("gtt_mlh").value = isFinite(mlh) ? fmtInput(fromMlh(mlh, u)) : "";
+  } else { // 'flow' bzw. Einheiten-/Tropffaktorwechsel
+    const v = num("gtt_mlh");
+    const mlh = toMlh(v, u);                                // Eingabe -> ml/h
+    document.getElementById("gtt_drops").value = (isFinite(mlh) && mlh>=0) ? fmtInput(mlh*f/60) : "";
   }
 }
 function gttFromResult(){
-  let m = LAST_MLH;                              // bevorzugt das berechnete Ergebnis aus Schritt 2
+  let m = LAST_MLH;                              // bevorzugt das berechnete Ergebnis aus Schritt 2 (ml/h)
   if(!(isFinite(m) && m>0)){                     // sonst aktuelle Rate aus Schritt 1
     const c = curContext();
     if(c.ok) m = fromDose(c.dose, "ml/h", c.w, c.conc);
   }
   if(isFinite(m) && m>0){
-    document.getElementById("gtt_mlh").value = fmt(m);
-    gttSync("mlh");
+    document.getElementById("gtt_mlh").value = fmtInput(fromMlh(m, gttRateUnit())); // in gewählter Einheit
+    gttSync("flow");
   } else {
     alert(t("gtt_no_rate"));                     // nichts Berechenbares vorhanden
   }
@@ -753,6 +767,13 @@ function fmtMass(mg){ // Massefamilie: mg, ab 1000 mg -> g
   if(!isFinite(mg)) return "–";
   if(Math.abs(mg) >= 1000) return fmt(mg/1000) + " g";
   return fmt(mg) + " mg";
+}
+// Für WERTE IN EINGABEFELDERN: OHNE Tausendertrennzeichen (sonst wird „1.000“ als 1,0 fehlgelesen)
+function fmtInput(x){
+  if(!isFinite(x)) return "";
+  const a=Math.abs(x);
+  let d = a>=10?1 : a>=1?2 : a>=0.1?3 : 4;
+  return x.toLocaleString(locale(), {useGrouping:false, minimumFractionDigits:0, maximumFractionDigits:d});
 }
 // Laufdauer als „X h Y min“ (bzw. Tage / nur Minuten)
 function fmtDuration(hours){
