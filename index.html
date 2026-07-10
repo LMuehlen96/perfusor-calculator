@@ -309,7 +309,7 @@
     <h2 data-i18n="gtt_title">Tropfen-Umrechner (Schwerkraft-Infusion)</h2>
     <div class="row">
       <label data-i18n="gtt_factor_lbl">Tropffaktor</label>
-      <select id="gtt_factor" onchange="gttSync('flow')">
+      <select id="gtt_factor" onchange="gttUpdate()">
         <option value="20">20 gtt/ml (Standard/Makro)</option>
         <option value="60">60 gtt/ml (Mikro/Pädiatrie)</option>
         <option value="15">15 gtt/ml</option>
@@ -318,22 +318,24 @@
     </div>
     <div class="row">
       <label data-i18n="gtt_rateunit_lbl">Laufraten-Einheit</label>
-      <select id="gtt_rateUnit" onchange="gttSync('flow')">
+      <select id="gtt_rateUnit" onchange="gttUpdate()">
         <option value="ml/h" selected>ml/h</option>
         <option value="ml/min">ml/min</option>
+        <option value="mg/h">mg/h</option>
+        <option value="mg/min">mg/min</option>
+        <option value="ug/min">µg/min</option>
       </select>
     </div>
     <div style="display:flex; gap:10px;">
       <div style="flex:1">
         <label data-i18n="gtt_rate_lbl">Laufrate</label>
-        <input id="gtt_mlh" type="text" inputmode="decimal" placeholder="Laufrate" oninput="gttSync('flow')">
+        <input id="gtt_mlh" type="text" inputmode="decimal" placeholder="Laufrate" oninput="onGttInput('flow')">
       </div>
       <div style="flex:1">
         <label data-i18n="gtt_drops_lbl">Tropfen/min (gtt)</label>
-        <input id="gtt_drops" type="text" inputmode="decimal" placeholder="gtt/min" oninput="gttSync('drops')">
+        <input id="gtt_drops" type="text" inputmode="decimal" placeholder="gtt/min" oninput="onGttInput('drops')">
       </div>
     </div>
-    <button class="btn btn-ghost" style="margin-top:10px" onclick="gttFromResult()" data-i18n="gtt_from_result">aus Ergebnis übernehmen</button>
     <div class="hint" data-i18n="gtt_hint">Tropfen zählen und ml/h ablesen – oder umgekehrt.</div>
   </div>
 
@@ -418,9 +420,9 @@ const I18N = {
     dur_text: (d,vol,mlh)=> "⏱ Laufdauer der Spritze: ca. "+d+" ("+fmt(vol)+" ml bei "+fmt(mlh)+" ml/h)",
     ref_label: "weitere Referenzen",
     gtt_title: "Tropfen-Umrechner (Schwerkraft-Infusion)", gtt_factor_lbl: "Tropffaktor",
-    gtt_rateunit_lbl: "Laufraten-Einheit", gtt_rate_lbl: "Laufrate",
+    gtt_rateunit_lbl: "Laufraten-Einheit", gtt_rate_lbl: "Laufrate", gtt_conc_lbl: "Konzentration (mg/ml)",
     gtt_drops_lbl: "Tropfen/min (gtt)", gtt_from_result: "aus Ergebnis übernehmen",
-    gtt_hint: "Tropfen/min zählen und ml/h ablesen – oder umgekehrt. Tropffaktor vom Infusionsset prüfen (Standard-Set meist 20 gtt/ml).",
+    gtt_hint: "Die Laufrate wird automatisch aus dem Rechner oben übernommen. Ohne Eingabe oben kannst du hier frei rechnen (Rate ↔ Tropfen/min, beide Richtungen). Bei mg/µg-Einheiten wird die Konzentration von oben genutzt. Tropffaktor vom Infusionsset prüfen (Standard meist 20 gtt/ml).",
     gtt_no_rate: "Noch keine Rate vorhanden – bitte zuerst Konzentration und Laufrate eingeben.",
     divi_std: "DIVI-Standard", carrier: "Träger",
     carrier_none: "unverdünnt", carrier_na: "— (Hauswert prüfen)",
@@ -490,9 +492,9 @@ const I18N = {
     dur_text: (d,vol,mlh)=> "⏱ Syringe run time: ca. "+d+" ("+fmt(vol)+" ml at "+fmt(mlh)+" ml/h)",
     ref_label: "more references",
     gtt_title: "Drip-rate converter (gravity infusion)", gtt_factor_lbl: "Drop factor",
-    gtt_rateunit_lbl: "Rate unit", gtt_rate_lbl: "Rate",
+    gtt_rateunit_lbl: "Rate unit", gtt_rate_lbl: "Rate", gtt_conc_lbl: "Concentration (mg/ml)",
     gtt_drops_lbl: "Drops/min (gtt)", gtt_from_result: "use result",
-    gtt_hint: "Count drops/min to read ml/h – or vice versa. Check the drop factor on your infusion set (standard set usually 20 gtt/ml).",
+    gtt_hint: "The rate is taken automatically from the calculator above. With no input above you can calculate freely here (rate ↔ drops/min, both directions). For mg/µg units the concentration is taken from above. Check the drop factor on your infusion set (standard usually 20 gtt/ml).",
     gtt_no_rate: "No rate yet – please enter concentration and rate first.",
     divi_std: "DIVI standard", carrier: "Carrier",
     carrier_none: "undiluted", carrier_na: "— (check local)",
@@ -719,32 +721,92 @@ function sendFeedback(){
    gtt/min = ml/h · Tropffaktor / 60 ;  ml/h = gtt/min · 60 / Tropffaktor */
 let LAST_MLH = NaN; // zuletzt berechnete ml/h aus Schritt 2 (für „aus Ergebnis übernehmen“)
 function gttFactor(){ return parseFloat(document.getElementById("gtt_factor").value) || 20; }
-function gttRateUnit(){ return document.getElementById("gtt_rateUnit").value; } // 'ml/h' | 'ml/min'
-function toMlh(v, u){ return u==="ml/min" ? v*60 : v; }   // Eingabe-Einheit -> ml/h
-function fromMlh(mlh, u){ return u==="ml/min" ? mlh/60 : mlh; } // ml/h -> Anzeige-Einheit
+function gttRateUnit(){ return document.getElementById("gtt_rateUnit").value; }
+function gttIsMass(u){ return u==="mg/h" || u==="mg/min" || u==="ug/min"; }
+// Konzentration (mg/ml) aus dem Rechner: bevorzugt neue Konzentration (Schritt 2),
+// sonst aktuelle (Schritt 1). Nur Masse-Familie.
+function gttConcMgMl(){
+  if(step2Visible() && familyOf(document.getElementById("new_massUnit").value)==="mass"){
+    const ug = concBase("new_mass","new_massUnit","new_vol");
+    if(isFinite(ug) && ug>0) return ug/1000;
+  }
+  if(familyOf(document.getElementById("cur_massUnit").value)==="mass"){
+    const ug = concBase("cur_mass","cur_massUnit","cur_vol");
+    if(isFinite(ug) && ug>0) return ug/1000;
+  }
+  return NaN;
+}
+// Eingabe-Einheit -> ml/h (Massen-Einheiten nutzen die Konzentration aus dem Rechner)
+function toMlh(v, u){
+  if(u==="ml/h") return v;
+  if(u==="ml/min") return v*60;
+  const c = gttConcMgMl(); if(!(c>0)) return NaN;        // ohne Konzentration nicht berechenbar
+  if(u==="mg/h") return v/c;
+  if(u==="mg/min") return v*60/c;
+  if(u==="ug/min") return (v*60/1000)/c;                 // µg/min -> mg/h -> ml/h
+  return NaN;
+}
+// ml/h -> Anzeige-Einheit
+function fromMlh(mlh, u){
+  if(u==="ml/h") return mlh;
+  if(u==="ml/min") return mlh/60;
+  const c = gttConcMgMl(); if(!(c>0)) return NaN;
+  if(u==="mg/h") return mlh*c;
+  if(u==="mg/min") return mlh*c/60;
+  if(u==="ug/min") return mlh*c/60*1000;
+  return NaN;
+}
+let gttLast = "flow"; // zuletzt vom Nutzer bearbeitetes Feld: 'flow' | 'drops'
+let gttSyncing = false; // verhindert Rückkopplung beim Hoch-Synchronisieren
+// aktualisiert immer das jeweils ANDERE Feld aus dem Quellfeld
 function gttSync(from){
   const f = gttFactor(), u = gttRateUnit();
-  if(from==="drops"){
+  if(from==="drops"){                                      // Quelle: Tropfen/min -> Laufrate
     const d = num("gtt_drops");
-    const mlh = (isFinite(d) && d>=0) ? d*60/f : NaN;      // gtt/min -> ml/h
+    const mlh = (isFinite(d) && d>=0) ? d*60/f : NaN;
     document.getElementById("gtt_mlh").value = isFinite(mlh) ? fmtInput(fromMlh(mlh, u)) : "";
-  } else { // 'flow' bzw. Einheiten-/Tropffaktorwechsel
+  } else {                                                 // Quelle: Laufrate -> Tropfen/min
     const v = num("gtt_mlh");
-    const mlh = toMlh(v, u);                                // Eingabe -> ml/h
+    const mlh = toMlh(v, u);
     document.getElementById("gtt_drops").value = (isFinite(mlh) && mlh>=0) ? fmtInput(mlh*f/60) : "";
   }
 }
-function gttFromResult(){
-  let m = LAST_MLH;                              // bevorzugt das berechnete Ergebnis aus Schritt 2 (ml/h)
-  if(!(isFinite(m) && m>0)){                     // sonst aktuelle Rate aus Schritt 1
-    const c = curContext();
-    if(c.ok) m = fromDose(c.dose, "ml/h", c.w, c.conc);
+// Nutzer tippt in ein Feld -> dieses ist die Quelle, das andere wird berechnet + nach oben synchronisiert
+function onGttInput(which){ gttLast = which; gttSync(which); gttPushUp(); }
+// Hoch-Synchronisieren: die im Tropfenzähler eingegebene Rate als „Laufrate (aktuell)" (ml/h) übernehmen
+function gttPushUp(){
+  const f = gttFactor(), u = gttRateUnit();
+  let mlh;
+  if(gttLast==="drops"){ const d = num("gtt_drops"); mlh = (isFinite(d)&&d>=0) ? d*60/f : NaN; }
+  else { mlh = toMlh(num("gtt_mlh"), u); }
+  if(!(isFinite(mlh) && mlh>=0)) return;
+  gttSyncing = true;                                   // gttUpdate pausieren (kein Zurückschreiben)
+  const ru = document.getElementById("cur_rateUnit");
+  if(ru.value !== "ml/h"){ ru.value = "ml/h"; updateWeightVisibility(); }
+  document.getElementById("cur_rate").value = fmtInput(mlh);
+  if(step2Visible()) calcResult(); else renderExtras();
+  gttSyncing = false;
+}
+// Aktuelle Laufrate aus dem Rechner in ml/h: Ergebnis Schritt 2 (falls sichtbar) sonst aktuelle Rate Schritt 1
+function activeMlh(){
+  if(step2Visible() && isFinite(LAST_MLH) && LAST_MLH>0) return LAST_MLH;
+  // Laufrate direkt in ml/h eingegeben -> keine Konzentration nötig (z. B. reine Infusion)
+  if(document.getElementById("cur_rateUnit").value==="ml/h"){
+    const r = num("cur_rate"); if(isFinite(r) && r>0) return r;
   }
-  if(isFinite(m) && m>0){
-    document.getElementById("gtt_mlh").value = fmtInput(fromMlh(m, gttRateUnit())); // in gewählter Einheit
+  const c = curContext();
+  return c.ok ? fromDose(c.dose, "ml/h", c.w, c.conc) : NaN;
+}
+// Tropfenzähler mit der Laufrate aus dem Rechner synchronisieren; sonst manueller Modus
+function gttUpdate(){
+  if(gttSyncing) return;                    // gerade läuft Hoch-Sync -> Tropfenzähler nicht überschreiben
+  const am = activeMlh();
+  if(isFinite(am) && am>0){
+    document.getElementById("gtt_mlh").value = fmtInput(fromMlh(am, gttRateUnit())); // in gewählter Einheit
+    gttLast = "flow";
     gttSync("flow");
   } else {
-    alert(t("gtt_no_rate"));                     // nichts Berechenbares vorhanden
+    gttSync(gttLast); // keine Rate im Rechner -> Tropfenzähler eigenständig nutzbar
   }
 }
 
@@ -974,6 +1036,8 @@ function renderExtras(){
     const line = durLine(num("cur_vol"), fromDose(c1.dose, "ml/h", c1.w, c1.conc));
     el1.className = line ? "dur show" : "dur"; el1.innerHTML = line;
   } else { el1.className = "dur"; el1.innerHTML = ""; }
+  // Tropfenzähler mit der Laufrate aus dem Rechner synchronisieren
+  gttUpdate();
 }
 
 /* ---------- Navigation ---------- */
