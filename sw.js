@@ -1,7 +1,7 @@
-/* Perfusor-Rechner – Service Worker (Offline-Cache)
+/* Infusionsrechner – Service Worker (Offline-Cache)
    Cache-Version bei jedem Update von index.html erhöhen (v1 -> v2 ...),
    damit Nutzer die neue Version zuverlässig erhalten. */
-const CACHE = "perfusor-v1";
+const CACHE = "infusionsrechner-v1";
 const ASSETS = [
   "./",
   "./index.html",

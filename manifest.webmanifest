@@ -1,7 +1,7 @@
 {
-  "name": "Perfusor-Rechner",
-  "short_name": "Perfusor",
-  "description": "Perfusor-Laufraten sicher umrechnen — Konzentration und Einheiten.",
+  "name": "Infusionsrechner",
+  "short_name": "Infusion",
+  "description": "Infusions-Laufraten sicher umrechnen — Konzentration und Einheiten.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
