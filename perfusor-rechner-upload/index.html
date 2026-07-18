@@ -41,9 +41,6 @@
   .divi{font-size:12px; color:#8fd9ff; line-height:1.4; margin:6px 0 0; display:none;}
   .divi.show{display:block;}
   .divi b{color:#c9edff;}
-  .dur{font-size:13px; color:#a9e5cf; line-height:1.4; margin:7px 0 0; display:none; font-weight:600;}
-  .dur.show{display:block;}
-  .ref{color:inherit; text-decoration:underline; font-weight:700; white-space:nowrap; opacity:.9;}
   body.basic .adv{display:none !important;}
   .steps{display:flex; gap:8px; margin-bottom:14px;}
   .steps .s{flex:1; text-align:center; font-size:12px; padding:7px 4px; border-radius:10px;
@@ -90,8 +87,6 @@
   .warn.show{display:block;}
   .warn.amber{background:#3a2f12; border:1px solid var(--warn); color:#ffd98a;}
   .warn.red{background:#3a1616; border:1px solid var(--danger); color:#ffb4b4;}
-  .warn.flash{animation:warnflash .55s ease-out 2;}
-  @keyframes warnflash{0%{filter:brightness(2);} 100%{filter:brightness(1);}}
   .disclaimer{font-size:12px; color:#9fb0c9; line-height:1.55; text-align:center;
     margin-top:22px; padding:13px 14px; border:1px solid var(--line);
     border-radius:12px; background:#182234;}
@@ -170,14 +165,6 @@
     <div class="card">
       <h2 data-i18n="h2_current">Das läuft gerade</h2>
 
-      <div class="row">
-        <label data-i18n="lbl_device">Fördersystem</label>
-        <div class="seg deviceSeg">
-          <button type="button" data-dev="syringe" class="active" onclick="setDevice('syringe')" data-i18n="dev_syringe">Spritzenpumpe</button>
-          <button type="button" data-dev="infusion" onclick="setDevice('infusion')" data-i18n="dev_infusion">Infusion</button>
-        </div>
-      </div>
-
       <div class="row adv">
         <label data-i18n="lbl_preset">Medikament (optional)</label>
         <select id="preset" onchange="onPresetChange()"></select>
@@ -211,8 +198,6 @@
         </div>
         <div class="hint" data-i18n="hint_conc_cur">Wirkstoffmenge im Perfusor, z.B. „5 mg in 50 ml".</div>
         <div class="divi" id="diviHint"></div>
-        <div class="dur" id="dur1"></div>
-        <div class="warn" id="warnBoxConc1"></div>
       </div>
 
       <div class="row">
@@ -221,7 +206,6 @@
           <input id="cur_rate" type="text" inputmode="decimal" data-ph="ph_rate" placeholder="Wert">
           <select id="cur_rateUnit"></select>
         </div>
-        <div class="warn" id="warnBoxRate1"></div>
       </div>
 
       <div class="row" id="weightRow">
@@ -245,6 +229,8 @@
         <label class="switch"><input type="checkbox" class="sw-icu" onchange="setIcu(this.checked)"><span class="slider"></span></label>
       </div>
       <div class="panel adv" id="daily1"></div>
+
+      <div class="warn" id="warnBox1"></div>
     </div>
 
     <div class="err" id="err1"></div>
@@ -257,7 +243,7 @@
       <div class="lab" data-i18n="lab_newrate">NEUE LAUFRATE</div>
       <div class="big" id="newRate">– <span id="newRateUnit">ml/h</span></div>
       <div class="sub" id="newRateSub"></div>
-      <select id="out_unit" class="out-sel"></select>
+      <select id="out_unit" class="out-sel adv"></select>
       <div class="warn" id="warnBox"></div>
     </div>
 
@@ -274,8 +260,6 @@
         </div>
         <div class="hint" data-i18n="hint_conc_new">Wirkstoffmenge im neuen Perfusor. Rechnet live.</div>
         <div class="divi" id="diviHint2"></div>
-        <div class="dur" id="dur2"></div>
-        <div class="warn" id="warnBoxConc2"></div>
       </div>
 
       <div class="row adv">
@@ -307,40 +291,6 @@
       <button class="btn btn-primary" style="flex:1.4" data-i18n="btn_reset" onclick="resetAll()">Neue Rechnung</button>
     </div>
   </section>
-
-  <div class="card hidden" id="gttCard">
-    <h2 data-i18n="gtt_title">Tropfen-Umrechner (Schwerkraft-Infusion)</h2>
-    <div class="row">
-      <label data-i18n="gtt_factor_lbl">Tropffaktor</label>
-      <select id="gtt_factor" onchange="gttUpdate()">
-        <option value="20">20 gtt/ml (Standard/Makro)</option>
-        <option value="60">60 gtt/ml (Mikro/Pädiatrie)</option>
-        <option value="15">15 gtt/ml</option>
-        <option value="10">10 gtt/ml</option>
-      </select>
-    </div>
-    <div class="row">
-      <label data-i18n="gtt_rateunit_lbl">Laufraten-Einheit</label>
-      <select id="gtt_rateUnit" onchange="gttUpdate()">
-        <option value="ml/h" selected>ml/h</option>
-        <option value="ml/min">ml/min</option>
-        <option value="mg/h">mg/h</option>
-        <option value="mg/min">mg/min</option>
-        <option value="ug/min">µg/min</option>
-      </select>
-    </div>
-    <div style="display:flex; gap:10px;">
-      <div style="flex:1">
-        <label data-i18n="gtt_rate_lbl">Laufrate</label>
-        <input id="gtt_mlh" type="text" inputmode="decimal" placeholder="Laufrate" oninput="onGttInput('flow')">
-      </div>
-      <div style="flex:1">
-        <label data-i18n="gtt_drops_lbl">Tropfen/min (gtt)</label>
-        <input id="gtt_drops" type="text" inputmode="decimal" placeholder="gtt/min" oninput="onGttInput('drops')">
-      </div>
-    </div>
-    <div class="hint" data-i18n="gtt_hint">Tropfen zählen und ml/h ablesen – oder umgekehrt.</div>
-  </div>
 
   <div class="disclaimer" data-i18n="disclaimer"></div>
 
@@ -417,16 +367,8 @@ const I18N = {
     warn_central_pref: ()=> "⚠️ Zentraler Zugang bevorzugt (Extravasat-/Vasopressor-Risiko).",
     warn_max_rate: (l,note)=> "⚠️ Über empfohlener Maximalrate ("+l+(note?" · "+note:"")+"). Bitte prüfen.",
     warn_max_daily: (l)=> "⛔ Tagesdosis über Höchstwert ("+l+"). Bitte prüfen.",
-    lbl_device: "Fördersystem", dev_syringe: "Spritzenpumpe", dev_infusion: "Infusion",
     mode_basic: "Basis", mode_advanced: "Erweitert 🔒",
     pw_prompt: "Passwort für die erweiterte Ansicht:", pw_wrong: "Falsches Passwort.",
-    dur_text: (d,vol,mlh)=> "⏱ Laufdauer der Spritze: ca. "+d+" ("+fmt(vol)+" ml bei "+fmt(mlh)+" ml/h)",
-    ref_label: "weitere Referenzen",
-    gtt_title: "Tropfen-Umrechner (Schwerkraft-Infusion)", gtt_factor_lbl: "Tropffaktor",
-    gtt_rateunit_lbl: "Laufraten-Einheit", gtt_rate_lbl: "Laufrate", gtt_conc_lbl: "Konzentration (mg/ml)",
-    gtt_drops_lbl: "Tropfen/min (gtt)", gtt_from_result: "aus Ergebnis übernehmen",
-    gtt_hint: "Die Laufrate wird automatisch aus dem Rechner oben übernommen. Ohne Eingabe oben kannst du hier frei rechnen (Rate ↔ Tropfen/min, beide Richtungen). Bei mg/µg-Einheiten wird die Konzentration von oben genutzt. Tropffaktor vom Infusionsset prüfen (Standard meist 20 gtt/ml).",
-    gtt_no_rate: "Noch keine Rate vorhanden – bitte zuerst Konzentration und Laufrate eingeben.",
     divi_std: "DIVI-Standard", carrier: "Träger",
     carrier_none: "unverdünnt", carrier_na: "— (Hauswert prüfen)",
     acc_rec_central: "zentral empfohlen", acc_rec_periph: "peripher möglich", acc_rec_dilute: "peripher nur ausreichend verdünnt",
@@ -489,16 +431,8 @@ const I18N = {
     warn_central_pref: ()=> "⚠️ Central access preferred (extravasation / vasopressor risk).",
     warn_max_rate: (l,note)=> "⚠️ Above recommended maximum rate ("+l+(note?" · "+note:"")+"). Please check.",
     warn_max_daily: (l)=> "⛔ Daily dose above maximum ("+l+"). Please check.",
-    lbl_device: "Delivery system", dev_syringe: "Syringe pump", dev_infusion: "Infusion",
     mode_basic: "Basic", mode_advanced: "Advanced 🔒",
     pw_prompt: "Password for advanced view:", pw_wrong: "Wrong password.",
-    dur_text: (d,vol,mlh)=> "⏱ Syringe run time: ca. "+d+" ("+fmt(vol)+" ml at "+fmt(mlh)+" ml/h)",
-    ref_label: "more references",
-    gtt_title: "Drip-rate converter (gravity infusion)", gtt_factor_lbl: "Drop factor",
-    gtt_rateunit_lbl: "Rate unit", gtt_rate_lbl: "Rate", gtt_conc_lbl: "Concentration (mg/ml)",
-    gtt_drops_lbl: "Drops/min (gtt)", gtt_from_result: "use result",
-    gtt_hint: "The rate is taken automatically from the calculator above. With no input above you can calculate freely here (rate ↔ drops/min, both directions). For mg/µg units the concentration is taken from above. Check the drop factor on your infusion set (standard usually 20 gtt/ml).",
-    gtt_no_rate: "No rate yet – please enter concentration and rate first.",
     divi_std: "DIVI standard", carrier: "Carrier",
     carrier_none: "undiluted", carrier_na: "— (check local)",
     acc_rec_central: "central recommended", acc_rec_periph: "peripheral possible", acc_rec_dilute: "peripheral only if sufficiently diluted",
@@ -544,7 +478,7 @@ const UNIT_LABEL = {
   "mmol/h":"mmol/h","mmol/min":"mmol/min","mmol/kg/h":"mmol/kg/h","mmol/kg/min":"mmol/kg/min"
 };
 const FAMILY_BASE_UNIT = { iu:"IU", mmol:"mmol" }; // Anzeige der Basis-Menge (mass separat via mg/g)
-const RATE_DEFAULT = { mass:"ml/h", iu:"ml/h", mmol:"ml/h" }; // Standard-Laufrateneinheit: ml/h
+const RATE_DEFAULT = { mass:"ug/kg/min", iu:"IU/h", mmol:"mmol/h" };
 const AMOUNT_DEFAULT = { mass:"mg", iu:"IU", mmol:"mmol" };
 
 function familyOf(amountUnit){ return amountUnit==="IU" ? "iu" : (amountUnit==="mmol" ? "mmol" : "mass"); }
@@ -566,33 +500,22 @@ let UNITS = []; // wird pro Familie aufgebaut (für „Andere Laufraten“)
      Glukose peripher ≤12,5 %: PPN/Osmolarität-Leitlinien. Kalium peripher ≤40 mmol/L
      & ≤10 mmol/h: KCl-Leitlinien. Amiodaron ≤2 mg/ml peripher / ~2,2 g/24 h: prüfen. */
 // std/carrier nach DIVI-Standardkonzentrationsliste (Stand 20.03.2025). carrier-Codes s. carrierText().
-// Referenz-URLs für die „weitere Referenzen“-Links hinter Warnungen/Anmerkungen:
-const REF = {
-  vaso:"https://www.ccjm.org/content/91/5/287",
-  dobu:"https://www.rote-liste.de/rle/detail/21897/Dobutamin-hameln-5-mg-ml-Infusionsloesung",
-  pris:"https://litfl.com/propofol-related-infusion-syndrome/",
-  gluc:"https://pmc.ncbi.nlm.nih.gov/articles/PMC8372860/",
-  kcl:"https://emed.ie/_docs/Pharm-Potassium-Chloride_20251221.pdf",
-  amio:"https://www.gelbe-liste.de/wirkstoffe/Amiodaron_21902",
-  pump:"https://en.wikipedia.org/wiki/Syringe_driver",
-  divi:"https://www.divi.de/publikationen/empfehlungen/standardkonzentrationen"
-};
 const PRESETS = [
   { id:"noradrenalin", name:{de:"Noradrenalin", en:"Norepinephrine"}, unit:"mg", family:"mass",
     concs:[{mass:5,vol:50}], std:"0,1 mg/ml (5 mg/50 ml)", carrier:"g5_nacl",
-    limits:[ {kind:"centralPreferred", threshold:{unit:"ug/kg/min", value:0.1}, src:REF.vaso} ] },
+    limits:[ {kind:"centralPreferred", threshold:{unit:"ug/kg/min", value:0.1}} ] },
   { id:"adrenalin", name:{de:"Adrenalin", en:"Epinephrine"}, unit:"mg", family:"mass",
     concs:[{mass:5,vol:50}], std:"0,1 mg/ml (5 mg/50 ml)", carrier:"g5_nacl",
-    limits:[ {kind:"centralPreferred", src:REF.vaso} ] },
+    limits:[ {kind:"centralPreferred"} ] },
   { id:"dobutamin", name:{de:"Dobutamin", en:"Dobutamine"}, unit:"mg", family:"mass",
     concs:[{mass:250,vol:50}], std:"5 mg/ml (250 mg/50 ml)", carrier:"none",
-    limits:[ {kind:"centralPreferred", src:REF.dobu},
-             {kind:"maxRate", unit:"ug/kg/min", value:50, label:"50 µg/kg/min", note:"Fachinfo-Max", src:REF.dobu} ] },
+    limits:[ {kind:"centralPreferred"},
+             {kind:"maxRate", unit:"ug/kg/min", value:50, label:"50 µg/kg/min", note:"Fachinfo-Max"} ] },
   { id:"urapidil", name:{de:"Urapidil", en:"Urapidil"}, unit:"mg", family:"mass",
     concs:[{mass:250,vol:50}], std:"5 mg/ml (250 mg/50 ml)", carrier:"none", limits:[] },
   { id:"propofol", name:{de:"Propofol", en:"Propofol"}, unit:"%", family:"mass",
     concs:[{mass:2,vol:0}], std:"20 mg/ml (2 %, 1000 mg/50 ml)", carrier:"none",
-    limits:[ {kind:"maxRate", unit:"mg/kg/h", value:4, label:"4 mg/kg/h", note:"PRIS", src:REF.pris} ] },
+    limits:[ {kind:"maxRate", unit:"mg/kg/h", value:4, label:"4 mg/kg/h", note:"PRIS"} ] },
   { id:"midazolam", name:{de:"Midazolam", en:"Midazolam"}, unit:"mg", family:"mass",
     concs:[{mass:100,vol:50}], std:"2 mg/ml (100 mg/50 ml)", carrier:"none", limits:[] },
   { id:"morphin", name:{de:"Morphin", en:"Morphine"}, unit:"mg", family:"mass",
@@ -603,21 +526,20 @@ const PRESETS = [
     concs:[{mass:2500,vol:50}], std:"nicht in DIVI-Liste – Hauswert prüfen", carrier:"na", limits:[] },
   { id:"amiodaron", name:{de:"Amiodaron", en:"Amiodarone"}, unit:"mg", family:"mass",
     concs:[{mass:1050,vol:50}], std:"21 mg/ml (1050 mg/50 ml); RTU 20 mg/ml", carrier:"g5",
-    limits:[ {kind:"maxConcPeripheral", basePerMl:2000, label:"2 mg/ml", src:REF.amio},
-             {kind:"maxDaily", unit:"g", value:2.2, label:"2,2 g/24 h (inkl. Bolus)", src:REF.amio} ] },
+    limits:[ {kind:"maxConcPeripheral", basePerMl:2000, label:"2 mg/ml"},
+             {kind:"maxDaily", unit:"g", value:2.2, label:"2,2 g/24 h (inkl. Bolus)"} ] },
   { id:"glukose", name:{de:"Glukose", en:"Glucose"}, unit:"%", family:"mass",
     concs:[{mass:40,vol:0}], std:"—", carrier:"na",
-    limits:[ {kind:"maxConcPeripheral", basePerMl:125000, label:"12,5 %", src:REF.gluc} ] },
+    limits:[ {kind:"maxConcPeripheral", basePerMl:125000, label:"12,5 %"} ] },
   { id:"kalium", name:{de:"Kalium (KCl)", en:"Potassium (KCl)"}, unit:"mmol", family:"mmol",
     concs:[{mass:50,vol:50}], std:"1 mmol/ml (50 mmol/50 ml)", carrier:"none",
-    limits:[ {kind:"maxConcPeripheral", basePerMl:0.04, label:"40 mmol/L", src:REF.kcl},
-             {kind:"maxRatePeripheral", unit:"mmol/h", value:10, label:"10 mmol/h", src:REF.kcl} ] },
+    limits:[ {kind:"maxConcPeripheral", basePerMl:0.04, label:"40 mmol/L"},
+             {kind:"maxRatePeripheral", unit:"mmol/h", value:10, label:"10 mmol/h"} ] },
   { id:"heparin", name:{de:"Heparin", en:"Heparin"}, unit:"IU", family:"iu",
     concs:[{mass:25000,vol:50}], std:"500 IE/ml (25 000 IE/50 ml)", carrier:"nacl", limits:[] },
   { id:"insulin", name:{de:"Insulin", en:"Insulin"}, unit:"IU", family:"iu",
     concs:[{mass:50,vol:50}], std:"1 IE/ml (50 IE/50 ml)", carrier:"nacl", limits:[] }
 ];
-function refLink(url){ return url ? ' <a class="ref" href="'+url+'" target="_blank" rel="noopener">'+t("ref_label")+' ↗</a>' : ''; }
 function carrierText(code){
   if(code==="g5_nacl") return "G5% / NaCl 0,9%";
   if(code==="nacl") return "NaCl 0,9%";
@@ -673,7 +595,7 @@ function updateDiviHint(){
   const els = [document.getElementById("diviHint"), document.getElementById("diviHint2")];
   if(!p){ els.forEach(e=>{ e.className="divi"; e.innerHTML=""; }); return; }
   const html = "<b>"+t("divi_std")+":</b> "+p.std+" · <b>"+t("carrier")+":</b> "+carrierText(p.carrier)
-             + " · <b>"+t("lbl_access")+":</b> "+accessRecText(p.id) + refLink(REF.divi);
+             + " · <b>"+t("lbl_access")+":</b> "+accessRecText(p.id);
   els.forEach(e=>{ e.className="divi show adv"; e.innerHTML=html; });
 }
 
@@ -720,99 +642,6 @@ function sendFeedback(){
   closeFeedback();
 }
 
-/* ---------- Tropfen-Umrechner (Schwerkraft) ----------
-   gtt/min = ml/h · Tropffaktor / 60 ;  ml/h = gtt/min · 60 / Tropffaktor */
-let LAST_MLH = NaN; // zuletzt berechnete ml/h aus Schritt 2 (für „aus Ergebnis übernehmen“)
-function gttFactor(){ return parseFloat(document.getElementById("gtt_factor").value) || 20; }
-function gttRateUnit(){ return document.getElementById("gtt_rateUnit").value; }
-function gttIsMass(u){ return u==="mg/h" || u==="mg/min" || u==="ug/min"; }
-// Konzentration (mg/ml) aus dem Rechner: bevorzugt neue Konzentration (Schritt 2),
-// sonst aktuelle (Schritt 1). Nur Masse-Familie.
-function gttConcMgMl(){
-  if(step2Visible() && familyOf(document.getElementById("new_massUnit").value)==="mass"){
-    const ug = concBase("new_mass","new_massUnit","new_vol");
-    if(isFinite(ug) && ug>0) return ug/1000;
-  }
-  if(familyOf(document.getElementById("cur_massUnit").value)==="mass"){
-    const ug = concBase("cur_mass","cur_massUnit","cur_vol");
-    if(isFinite(ug) && ug>0) return ug/1000;
-  }
-  return NaN;
-}
-// Eingabe-Einheit -> ml/h (Massen-Einheiten nutzen die Konzentration aus dem Rechner)
-function toMlh(v, u){
-  if(u==="ml/h") return v;
-  if(u==="ml/min") return v*60;
-  const c = gttConcMgMl(); if(!(c>0)) return NaN;        // ohne Konzentration nicht berechenbar
-  if(u==="mg/h") return v/c;
-  if(u==="mg/min") return v*60/c;
-  if(u==="ug/min") return (v*60/1000)/c;                 // µg/min -> mg/h -> ml/h
-  return NaN;
-}
-// ml/h -> Anzeige-Einheit
-function fromMlh(mlh, u){
-  if(u==="ml/h") return mlh;
-  if(u==="ml/min") return mlh/60;
-  const c = gttConcMgMl(); if(!(c>0)) return NaN;
-  if(u==="mg/h") return mlh*c;
-  if(u==="mg/min") return mlh*c/60;
-  if(u==="ug/min") return mlh*c/60*1000;
-  return NaN;
-}
-let gttLast = "flow"; // zuletzt vom Nutzer bearbeitetes Feld: 'flow' | 'drops'
-let gttSyncing = false; // verhindert Rückkopplung beim Hoch-Synchronisieren
-// aktualisiert immer das jeweils ANDERE Feld aus dem Quellfeld
-function gttSync(from){
-  const f = gttFactor(), u = gttRateUnit();
-  if(from==="drops"){                                      // Quelle: Tropfen/min -> Laufrate
-    const d = num("gtt_drops");
-    const mlh = (isFinite(d) && d>=0) ? d*60/f : NaN;
-    document.getElementById("gtt_mlh").value = isFinite(mlh) ? fmtInput(fromMlh(mlh, u)) : "";
-  } else {                                                 // Quelle: Laufrate -> Tropfen/min
-    const v = num("gtt_mlh");
-    const mlh = toMlh(v, u);
-    document.getElementById("gtt_drops").value = (isFinite(mlh) && mlh>=0) ? fmtInput(mlh*f/60) : "";
-  }
-}
-// Nutzer tippt in ein Feld -> dieses ist die Quelle, das andere wird berechnet + nach oben synchronisiert
-function onGttInput(which){ gttLast = which; gttSync(which); gttPushUp(); }
-// Hoch-Synchronisieren: die im Tropfenzähler eingegebene Rate als „Laufrate (aktuell)" (ml/h) übernehmen
-function gttPushUp(){
-  const f = gttFactor(), u = gttRateUnit();
-  let mlh;
-  if(gttLast==="drops"){ const d = num("gtt_drops"); mlh = (isFinite(d)&&d>=0) ? d*60/f : NaN; }
-  else { mlh = toMlh(num("gtt_mlh"), u); }
-  if(!(isFinite(mlh) && mlh>=0)) return;
-  gttSyncing = true;                                   // gttUpdate pausieren (kein Zurückschreiben)
-  const ru = document.getElementById("cur_rateUnit");
-  if(ru.value !== "ml/h"){ ru.value = "ml/h"; updateWeightVisibility(); }
-  document.getElementById("cur_rate").value = fmtInput(mlh);
-  if(step2Visible()) calcResult(); else renderExtras();
-  gttSyncing = false;
-}
-// Aktuelle Laufrate aus dem Rechner in ml/h: Ergebnis Schritt 2 (falls sichtbar) sonst aktuelle Rate Schritt 1
-function activeMlh(){
-  if(step2Visible() && isFinite(LAST_MLH) && LAST_MLH>0) return LAST_MLH;
-  // Laufrate direkt in ml/h eingegeben -> keine Konzentration nötig (z. B. reine Infusion)
-  if(document.getElementById("cur_rateUnit").value==="ml/h"){
-    const r = num("cur_rate"); if(isFinite(r) && r>0) return r;
-  }
-  const c = curContext();
-  return c.ok ? fromDose(c.dose, "ml/h", c.w, c.conc) : NaN;
-}
-// Tropfenzähler mit der Laufrate aus dem Rechner synchronisieren; sonst manueller Modus
-function gttUpdate(){
-  if(gttSyncing) return;                    // gerade läuft Hoch-Sync -> Tropfenzähler nicht überschreiben
-  const am = activeMlh();
-  if(isFinite(am) && am>0){
-    document.getElementById("gtt_mlh").value = fmtInput(fromMlh(am, gttRateUnit())); // in gewählter Einheit
-    gttLast = "flow";
-    gttSync("flow");
-  } else {
-    gttSync(gttLast); // keine Rate im Rechner -> Tropfenzähler eigenständig nutzbar
-  }
-}
-
 /* ---------- Helfer ---------- */
 function num(id){
   const el = document.getElementById(id);
@@ -832,27 +661,6 @@ function fmtMass(mg){ // Massefamilie: mg, ab 1000 mg -> g
   if(!isFinite(mg)) return "–";
   if(Math.abs(mg) >= 1000) return fmt(mg/1000) + " g";
   return fmt(mg) + " mg";
-}
-// Für WERTE IN EINGABEFELDERN: OHNE Tausendertrennzeichen (sonst wird „1.000“ als 1,0 fehlgelesen)
-function fmtInput(x){
-  if(!isFinite(x)) return "";
-  const a=Math.abs(x);
-  let d = a>=10?1 : a>=1?2 : a>=0.1?3 : 4;
-  return x.toLocaleString(locale(), {useGrouping:false, minimumFractionDigits:0, maximumFractionDigits:d});
-}
-// Laufdauer als „X h Y min“ (bzw. Tage / nur Minuten)
-function fmtDuration(hours){
-  if(!isFinite(hours) || hours<=0) return null;
-  if(hours>=48){ const d=Math.floor(hours/24); const h=Math.round(hours-d*24); return d+" d "+h+" h"; }
-  let h=Math.floor(hours), m=Math.round((hours-h)*60);
-  if(m===60){ h++; m=0; }
-  return h===0 ? (m+" min") : (h+" h "+m+" min");
-}
-// Laufdauer-Zeile aus Volumen (ml) und Rate (ml/h)
-function durLine(vol, mlh){
-  if(!(vol>0) || !isFinite(mlh) || mlh<=0) return "";
-  const d = fmtDuration(vol/mlh);
-  return d ? t("dur_text", d, vol, mlh) : "";
 }
 
 /* ---------- Generische Umrechnung (familienübergreifend, aber je Rechnung eine Familie) ----------
@@ -885,81 +693,47 @@ function deliveredDose(){ // Basis/h aus aktueller Seite
 function needsWeight(){ return document.getElementById("cur_rateUnit").value.includes("/kg/"); }
 
 /* ---------- Plausibilitäts-Schwellen (anpassbar) ---------- */
-// Plausibilitätsgrenzen je Fördersystem (ml/h)
-const WARN = {
-  syringe:  { pumpMax:99,       implausible:1000, lowRate:0.5 }, // Spritzenpumpe: Max ~99 ml/h
-  infusion: { pumpMax:Infinity, implausible:2000, lowRate:0 }    // Infusion: höhere Raten normal
-};
-let DEVICE = "syringe"; // 'syringe' | 'infusion'
-function warnCfg(){ return WARN[DEVICE] || WARN.syringe; }
-function setDevice(d){
-  DEVICE = (d==="infusion") ? "infusion" : "syringe";
-  document.querySelectorAll(".deviceSeg button").forEach(b=>b.classList.toggle("active", b.dataset.dev===DEVICE));
-  document.getElementById("gttCard").classList.toggle("hidden", DEVICE!=="infusion"); // Tropfenrechner nur bei Infusion
-  if(step2Visible()) calcResult(); else renderExtras();
-}
-function clearWarnings(id){ const b=document.getElementById(id); if(b){ b.className="warn"; b.innerHTML=""; } }
-// Rendert eine Warnungsliste in eine Box; leuchtet beim Neu-Erscheinen kurz auf
-function paintWarn(id, lines, sev){
-  const box = document.getElementById(id); if(!box) return;
-  const wasEmpty = !box.innerHTML;
-  if(lines.length){
-    box.className = "warn "+(sev==="red"?"red":"amber")+" show";
-    box.innerHTML = lines.join("<br>");
-    if(wasEmpty){ box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash"); } // Aufleuchten
-  } else { box.className = "warn"; box.innerHTML = ""; }
-}
-// Trennt Warnungen in KONZENTRATIONS- und RATEN-Kategorie und rendert sie in getrennte Boxen.
-// concId für Konzentrationswarnung (unter Konzentrationsfeld), rateId für Raten-/Pumpenwarnung (unter Laufrate).
-function renderWarnings(concId, rateId, mlh, dose, conc, w){
-  const concLines=[], rateLines=[]; let concSev="amber", rateSev="amber";
-  const p = activePreset();
-  // --- Konzentrations-Warnung (unabhängig von der Laufrate) ---
-  if(p && isFinite(conc) && conc>0){
-    for(const L of p.limits){
-      if(L.kind==="maxConcPeripheral" && ACCESS==="periph" && conc > L.basePerMl){
-        concLines.push(t("warn_conc_periph", L.label)+refLink(L.src)); concSev="red";
-      }
-    }
-  }
-  // --- Raten-/Pumpen-Warnungen ---
-  const W = warnCfg();
+const WARN = { pumpMax:99, implausible:1000, lowRate:0.5 };
+function clearWarnings(id){ const b=document.getElementById(id); b.className="warn"; b.innerHTML=""; }
+// Kombiniert Pumpen-Plausibilität (mlh) mit Preset-Grenzwerten (Konzentration/Zugang/Rate).
+function renderWarnings(id, mlh, dose, conc, w){
+  const lines = []; let sev = "amber";
+  // 1) Pumpen-/Plausibilitätsgrenzen (physikalisch, familienunabhängig)
   if(isFinite(mlh) && mlh>0){
-    if(mlh > W.implausible){ rateLines.push(t("warn_implausible", mlh)+refLink(REF.pump)); rateSev="red"; }
-    else if(mlh > W.pumpMax){ rateLines.push(t("warn_pumpmax", W.pumpMax)+refLink(REF.pump)); }
-    else if(mlh < W.lowRate){ rateLines.push(t("warn_low", mlh)+refLink(REF.pump)); }
+    if(mlh > WARN.implausible){ lines.push(t("warn_implausible", mlh)); sev="red"; }
+    else if(mlh > WARN.pumpMax){ lines.push(t("warn_pumpmax", WARN.pumpMax)); }
+    else if(mlh < WARN.lowRate){ lines.push(t("warn_low", mlh)); }
   }
+  // 2) Medikamenten-Preset-Grenzwerte
+  const p = activePreset();
   if(p && isFinite(dose)){
     for(const L of p.limits){
-      const ref = refLink(L.src);
-      if(L.kind==="centralPreferred"){
-        if(ACCESS==="periph"){ let hit=true; if(L.threshold){ const r=fromDose(dose, L.threshold.unit, w, conc); hit=isFinite(r)&&r>L.threshold.value; } if(hit) rateLines.push(t("warn_central_pref")+ref); }
+      if(L.kind==="maxConcPeripheral"){
+        if(ACCESS==="periph" && isFinite(conc) && conc > L.basePerMl){ lines.push(t("warn_conc_periph", L.label)); sev="red"; }
+      } else if(L.kind==="centralPreferred"){
+        if(ACCESS==="periph"){
+          let hit = true;
+          if(L.threshold){ const r=fromDose(dose, L.threshold.unit, w, conc); hit = isFinite(r) && r > L.threshold.value; }
+          if(hit) lines.push(t("warn_central_pref"));
+        }
       } else if(L.kind==="maxRate"){
-        const r=fromDose(dose, L.unit, w, conc); if(isFinite(r)&&r>L.value) rateLines.push(t("warn_max_rate", L.label, L.note||"")+ref);
+        const r = fromDose(dose, L.unit, w, conc);
+        if(isFinite(r) && r > L.value) lines.push(t("warn_max_rate", L.label, L.note||""));
       } else if(L.kind==="maxRatePeripheral"){
-        if(ACCESS==="periph"){ const r=fromDose(dose, L.unit, w, conc); if(isFinite(r)&&r>L.value) rateLines.push(t("warn_max_rate", L.label, t("periph_tag"))+ref); }
+        if(ACCESS==="periph"){ const r=fromDose(dose, L.unit, w, conc); if(isFinite(r) && r > L.value) lines.push(t("warn_max_rate", L.label, t("periph_tag"))); }
       }
     }
   }
-  if(concId===rateId){
-    paintWarn(concId, concLines.concat(rateLines), (concSev==="red"||rateSev==="red")?"red":"amber");
-  } else {
-    paintWarn(concId, concLines, concSev);
-    paintWarn(rateId, rateLines, rateSev);
-  }
+  const box = document.getElementById(id);
+  if(lines.length){ box.className = "warn "+(sev==="red"?"red":"amber")+" show"; box.innerHTML = lines.join("<br>"); }
+  else clearWarnings(id);
 }
-// Warnungen Schritt 1: Konzentration -> warnBoxConc1, Rate -> warnBoxRate1 (jeweils sofort/feldnah)
+// Warnung für die aktuell laufende Seite (Schritt 1) auf Basis der aktuellen Konzentration
 function updateStep1Warnings(){
-  const conc = concBase("cur_mass","cur_massUnit","cur_vol");
-  const dose = deliveredDose();
-  const w = num("weight");
-  let mlh;
-  if(document.getElementById("cur_rateUnit").value==="ml/h"){    // ml/h direkt -> keine Konzentration nötig
-    const r = num("cur_rate"); mlh = (isFinite(r)&&r>=0) ? r : NaN;
-  } else {
-    mlh = (isFinite(dose) && isFinite(conc) && conc>0) ? fromDose(dose,"ml/h",w,conc) : NaN;
-  }
-  renderWarnings("warnBoxConc1", "warnBoxRate1", mlh, dose, conc, w);
+  const c = curContext();
+  if(!c.ok){ clearWarnings("warnBox1"); return; }
+  const mlh = fromDose(c.dose, "ml/h", c.w, c.conc);
+  renderWarnings("warnBox1", mlh, c.dose, c.conc, c.w);
 }
 
 /* ---------- Gewichtsfeld-Hinweis ---------- */
@@ -1038,7 +812,7 @@ function dailyHTML(dose, conc, w, family){
     for(const L of p.limits){
       if(L.kind==="maxDaily"){
         const dIn = perDayBase / AMOUNT_FACTOR[L.unit];
-        if(dIn > L.value) s += "<br><span style='color:#ffb4b4'>"+t("warn_max_daily", L.label)+refLink(L.src)+"</span>";
+        if(dIn > L.value) s += "<br><span style='color:#ffb4b4'>"+t("warn_max_daily", L.label)+"</span>";
       }
     }
   }
@@ -1052,15 +826,6 @@ function renderExtras(){
   if(state.other) document.getElementById("other2").innerHTML = c2.ok ? ratesHTML(c2.dose,c2.conc,c2.w) : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
   if(state.icu)   document.getElementById("daily2").innerHTML = c2.ok ? "<div class='daily'>"+dailyHTML(c2.dose,c2.conc,c2.w,c2.family)+"</div>" : "<div class='placeholder'>"+t("enter_new_conc")+"</div>";
   updateStep1Warnings();
-  // Laufdauer Schritt 1 (aktuelle Spritze) – in Basis + Erweitert sichtbar
-  const el1 = document.getElementById("dur1");
-  const unit1 = document.getElementById("cur_massUnit").value;
-  if(c1.ok && unit1!=="%"){
-    const line = durLine(num("cur_vol"), fromDose(c1.dose, "ml/h", c1.w, c1.conc));
-    el1.className = line ? "dur show" : "dur"; el1.innerHTML = line;
-  } else { el1.className = "dur"; el1.innerHTML = ""; }
-  // Tropfenzähler mit der Laufrate aus dem Rechner synchronisieren
-  gttUpdate();
 }
 
 /* ---------- Navigation ---------- */
@@ -1115,15 +880,12 @@ function calcResult(){
   if(!(newAmt>0) || !isFinite(concBasePerMl) || concBasePerMl<=0){
     box.innerHTML = "– <span id='newRateUnit'>ml/h</span>";
     sub.textContent = t("enter_new_conc");
-    const eld=document.getElementById("dur2"); eld.className="dur"; eld.innerHTML="";
-    LAST_MLH = NaN;
-    clearWarnings("warnBoxConc2"); clearWarnings("warnBox"); renderExtras(); return;
+    clearWarnings("warnBox"); renderExtras(); return;
   }
   const w = num("weight");
   const outUnit = document.getElementById("out_unit").value;
   const outLabel = UNIT_LABEL[outUnit];
   const mlh = fromDose(dose, "ml/h", w, concBasePerMl);
-  LAST_MLH = mlh; // für Tropfen-Umrechner „aus Ergebnis übernehmen“
 
   if(outUnit.includes("/kg/") && (!isFinite(w) || w<=0)){
     box.innerHTML = "– <span id='newRateUnit'>"+outLabel+"</span>";
@@ -1137,11 +899,7 @@ function calcResult(){
     if(outUnit!=="ml/h") subTxt += t("sub_equals", mlh);
     sub.textContent = subTxt;
   }
-  renderWarnings("warnBoxConc2", "warnBox", mlh, dose, concBasePerMl, w);
-  // Laufdauer der neuen Spritze (Volumen ÷ ml/h)
-  const eld=document.getElementById("dur2");
-  if(nUnit!=="%"){ const line=durLine(newVol, mlh); eld.className=line?"dur show":"dur"; eld.innerHTML=line; }
-  else { eld.className="dur"; eld.innerHTML=""; }
+  renderWarnings("warnBox", mlh, dose, concBasePerMl, w);
   renderExtras();
 }
 
@@ -1206,7 +964,6 @@ updateVolVisibility("new");
   setLang(saved || guess);
 })();
 applyMode("basic"); // Grundeinstellung: Basis-Ansicht
-setDevice("syringe"); // Standard: Spritzenpumpe (Tropfenrechner ausgeblendet)
 
 /* ---------- PWA ---------- */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {

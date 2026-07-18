@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#16a34a"/>
+
+  <!-- kleine Spritze, diagonal, oben -->
+  <g transform="rotate(-45 256 176)">
+    <rect x="176" y="158" width="104" height="36" rx="8" fill="#eafff5"/>
+    <rect x="176" y="158" width="42" height="36" rx="8" fill="#bff3dc"/>
+    <rect x="158" y="149" width="16" height="54" rx="5" fill="#eafff5"/>
+    <rect x="280" y="169" width="34" height="14" rx="5" fill="#eafff5"/>
+    <rect x="314" y="174" width="26" height="4" rx="2" fill="#eafff5"/>
+    <circle cx="346" cy="176" r="6" fill="#eafff5"/>
+  </g>
+
+  <!-- zwei gegenläufige Pfeile (Umrechnung) -->
+  <g fill="none" stroke="#eafff5" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <!-- oberer Pfeil: nach rechts -->
+    <path d="M150 316 H336"/>
+    <path d="M330 288 l34 28 l-34 28"/>
+    <!-- unterer Pfeil: nach links -->
+    <path d="M362 400 H176"/>
+    <path d="M182 372 l-34 28 l34 28"/>
+  </g>
+</svg>
